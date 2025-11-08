@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -16,6 +17,7 @@ type SubmissionFormProps = {
 
 export function SubmissionForm({ competition, userId }: SubmissionFormProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [prompt, setPrompt] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -25,6 +27,12 @@ export function SubmissionForm({ competition, userId }: SubmissionFormProps) {
     setLoading(true)
     setError("")
 
+    if (!user) {
+      setError("You must be logged in to submit")
+      setLoading(false)
+      return
+    }
+
     // Validate character limit
     if (competition.characterLimit && prompt.length > competition.characterLimit) {
       setError(`Prompt exceeds character limit of ${competition.characterLimit}`)
@@ -33,10 +41,13 @@ export function SubmissionForm({ competition, userId }: SubmissionFormProps) {
     }
 
     try {
+      const token = await user.getIdToken()
+
       const response = await fetch("/api/submissions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           competitionId: competition.id,

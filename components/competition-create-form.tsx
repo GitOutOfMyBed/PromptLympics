@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -58,6 +59,7 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
 
 export function CompetitionCreateForm({ userId }: { userId: string }) {
   const router = useRouter()
+  const { user } = useAuth()
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState<CompetitionFormData>(INITIAL_FORM_DATA)
   const [loading, setLoading] = useState(false)
@@ -86,6 +88,15 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
     setError("")
 
     try {
+      if (!user) {
+        setError("You must be logged in to create a competition")
+        setLoading(false)
+        return
+      }
+
+      // Get Firebase ID token
+      const token = await user.getIdToken()
+
       // First, upload files
       const formDataToSend = new FormData()
 
@@ -100,6 +111,9 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
 
       const uploadResponse = await fetch("/api/upload", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formDataToSend,
       })
 
@@ -126,6 +140,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(competitionData),
       })
