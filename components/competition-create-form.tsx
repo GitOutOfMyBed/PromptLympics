@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/providers/auth-provider"
+import { storage } from "@/firebase/firebasefrontend"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -197,32 +199,33 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
 
       // Get Firebase ID token
       const token = await user.getIdToken()
-      console.log("Token length:", token?.length)
 
-      // First, upload files
-      const formDataToSend = new FormData()
+      // Upload files to Firebase Storage
+      const timestamp = Date.now()
+      const trainingRef = ref(storage, `competitions/${user.uid}/${timestamp}/training.json`)
+      const validationRef = ref(storage, `competitions/${user.uid}/${timestamp}/validation.json`)
 
-      formDataToSend.append("trainingFile", formData.trainingFile!)
-      formDataToSend.append("validationFile", formData.validationFile!)
+      console.log("Uploading files to Firebase Storage...")
 
-      console.log("Sending upload request with auth token")
-      const uploadResponse = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      })
+      // Upload training file
+      await uploadBytes(trainingRef, formData.trainingFile!)
+      const trainingUrl = await getDownloadURL(trainingRef)
 
-      console.log("Upload response status:", uploadResponse.status)
+      // Upload validation file
+      await uploadBytes(validationRef, formData.validationFile!)
+      const validationUrl = await getDownloadURL(validationRef)
 
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json().catch(() => ({ error: "Unknown error" }))
-        console.error("Upload failed:", errorData)
-        throw new Error(errorData.error || "Failed to upload files")
-      }
+      // Parse files to get sizes
+      const trainingText = await formData.trainingFile!.text()
+      const validationText = await formData.validationFile!.text()
 
-      const { trainingUrl, validationUrl, trainingSize, validationSize } = await uploadResponse.json()
+      const trainingData = JSON.parse(trainingText)
+      const validationData = JSON.parse(validationText)
+
+      const trainingSize = Array.isArray(trainingData) ? trainingData.length : 0
+      const validationSize = Array.isArray(validationData) ? validationData.length : 0
+
+      console.log("Files uploaded successfully")
 
       // Then create competition
       const competitionData = {

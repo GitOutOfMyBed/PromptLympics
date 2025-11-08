@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server"
 import { verifyAuth } from "@/lib/auth"
-import { writeFile, mkdir } from "fs/promises"
-import { join } from "path"
-import { existsSync } from "fs"
 
 export async function POST(req: Request) {
   try {
@@ -23,30 +20,20 @@ export async function POST(req: Request) {
       )
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), "public", "uploads")
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
+    // Read and parse files to validate and get size
+    const trainingText = await trainingFile.text()
+    const validationText = await validationFile.text()
+
+    let trainingData, validationData
+    try {
+      trainingData = JSON.parse(trainingText)
+      validationData = JSON.parse(validationText)
+    } catch (e) {
+      return NextResponse.json(
+        { error: "Files must be valid JSON" },
+        { status: 400 }
+      )
     }
-
-    // Generate unique filenames
-    const timestamp = Date.now()
-    const trainingFilename = `training-${timestamp}-${trainingFile.name}`
-    const validationFilename = `validation-${timestamp}-${validationFile.name}`
-
-    const trainingPath = join(uploadsDir, trainingFilename)
-    const validationPath = join(uploadsDir, validationFilename)
-
-    // Write files
-    const trainingBytes = await trainingFile.arrayBuffer()
-    const validationBytes = await validationFile.arrayBuffer()
-
-    await writeFile(trainingPath, Buffer.from(trainingBytes))
-    await writeFile(validationPath, Buffer.from(validationBytes))
-
-    // Parse JSON to get sample counts
-    const trainingData = JSON.parse(await trainingFile.text())
-    const validationData = JSON.parse(await validationFile.text())
 
     if (!Array.isArray(trainingData) || !Array.isArray(validationData)) {
       return NextResponse.json(
@@ -55,16 +42,17 @@ export async function POST(req: Request) {
       )
     }
 
+    // Return the file contents to be uploaded from the client side
+    // The client will upload to Firebase Storage and pass the URLs back
     return NextResponse.json({
-      trainingUrl: `/uploads/${trainingFilename}`,
-      validationUrl: `/uploads/${validationFilename}`,
       trainingSize: trainingData.length,
       validationSize: validationData.length,
+      message: "Files validated successfully",
     })
   } catch (error) {
-    console.error("Error uploading files:", error)
+    console.error("Error validating files:", error)
     return NextResponse.json(
-      { error: "Failed to upload files" },
+      { error: "Failed to validate files" },
       { status: 500 }
     )
   }
