@@ -96,6 +96,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
 
       // Get Firebase ID token
       const token = await user.getIdToken()
+      console.log("Token length:", token?.length)
 
       // First, upload files
       const formDataToSend = new FormData()
@@ -109,6 +110,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       formDataToSend.append("trainingFile", formData.trainingFile)
       formDataToSend.append("validationFile", formData.validationFile)
 
+      console.log("Sending upload request with auth token")
       const uploadResponse = await fetch("/api/upload", {
         method: "POST",
         headers: {
@@ -117,8 +119,12 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
         body: formDataToSend,
       })
 
+      console.log("Upload response status:", uploadResponse.status)
+
       if (!uploadResponse.ok) {
-        throw new Error("Failed to upload files")
+        const errorData = await uploadResponse.json().catch(() => ({ error: "Unknown error" }))
+        console.error("Upload failed:", errorData)
+        throw new Error(errorData.error || "Failed to upload files")
       }
 
       const { trainingUrl, validationUrl, trainingSize, validationSize } = await uploadResponse.json()

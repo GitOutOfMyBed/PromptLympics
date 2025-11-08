@@ -4,11 +4,22 @@ import { prisma } from "@/lib/prisma"
 export async function verifyAuth(request: Request) {
   const authHeader = request.headers.get("Authorization")
 
-  if (!authHeader?.startsWith("Bearer ")) {
+  if (!authHeader) {
+    console.error("No Authorization header")
+    return null
+  }
+
+  if (!authHeader.startsWith("Bearer ")) {
+    console.error("Invalid Authorization header format:", authHeader.substring(0, 20))
     return null
   }
 
   const token = authHeader.split("Bearer ")[1]
+
+  if (!token) {
+    console.error("No token found in Authorization header")
+    return null
+  }
 
   try {
     const decodedToken = await verifyIdToken(token)
@@ -33,6 +44,10 @@ export async function verifyAuth(request: Request) {
     }
   } catch (error) {
     console.error("Auth verification error:", error)
+    if (error instanceof Error) {
+      console.error("Error message:", error.message)
+      console.error("Error stack:", error.stack)
+    }
     return null
   }
 }
