@@ -16,16 +16,16 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Trophy, Calendar, DollarSign, Target, Download, Code } from "lucide-react"
-import { Session } from "next-auth"
+import { User } from "firebase/auth"
 
 type CompetitionDetailsProps = {
   competition: any
-  session: Session | null
+  session: { user: User } | null
 }
 
 export function CompetitionDetails({ competition, session }: CompetitionDetailsProps) {
   const isActive = new Date() < new Date(competition.endDate) && competition.status === "ACTIVE"
-  const isOrganizer = session?.user?.id === competition.organizerId
+  const isOrganizer = session?.user?.uid === competition.organizerId
 
   const downloadTestCases = () => {
     // This would trigger a download of the training test cases

@@ -1,13 +1,22 @@
-import { getServerSession } from "next-auth"
-import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/components/providers/auth-provider"
 import { LandingPage } from "@/components/landing-page"
 
-export default async function Home() {
-  const session = await getServerSession(authOptions)
+export default function Home() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
 
-  if (session) {
-    redirect("/competitions")
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/competitions")
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return <div>Loading...</div>
   }
 
   return <LandingPage />

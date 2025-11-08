@@ -1,58 +1,67 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { notFound, redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useAuth } from "@/components/providers/auth-provider"
 import { Navbar } from "@/components/navbar"
 import { CompetitionDetails } from "@/components/competition-details"
 
-export default async function CompetitionPage({
+export default function CompetitionPage({
   params,
 }: {
   params: { id: string }
 }) {
-  const session = await getServerSession(authOptions)
+  const { user } = useAuth()
+  const [competition, setCompetition] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
 
-  const competition = await prisma.competition.findUnique({
-    where: { id: params.id },
-    include: {
-      organizer: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      submissions: {
-        take: 10,
-        orderBy: {
-          score: "desc",
-        },
-        include: {
-          user: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      },
-      testCases: {
-        where: {
-          isPublic: true,
-        },
-      },
-    },
-  })
+  useEffect(() => {
+    async function fetchCompetition() {
+      try {
+        const response = await fetch(`/api/competitions/${params.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setCompetition(data)
+        } else if (response.status === 404) {
+          setNotFound(true)
+        }
+      } catch (error) {
+        console.error("Failed to fetch competition:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  if (!competition) {
-    notFound()
+    fetchCompetition()
+  }, [params.id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <p>Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (notFound) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-2xl font-bold">Competition not found</h1>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <CompetitionDetails competition={competition} session={session} />
+        <CompetitionDetails competition={competition} session={user ? { user } : null} />
       </div>
     </div>
   )

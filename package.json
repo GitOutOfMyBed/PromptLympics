@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.4.0",
     "@hookform/resolvers": "^3.9.0",
     "@prisma/client": "^5.19.0",
     "@tanstack/react-query": "^5.51.0",
@@ -23,7 +22,6 @@
     "jwks-rsa": "^3.2.0",
     "lucide-react": "^0.428.0",
     "next": "^14.2.0",
-    "next-auth": "^4.24.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-hook-form": "^7.52.0",
