@@ -6,7 +6,7 @@ import { AuthProvider } from "@/components/providers/auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "OptoPrompt - Prompt Engineering Competitions",
+  title: "PromptLympics - Prompt Engineering Competitions",
   description: "A platform for crowdsourced prompt engineering competitions",
 }
 

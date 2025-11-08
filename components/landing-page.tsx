@@ -15,7 +15,7 @@ export function LandingPage() {
           Crowdsource the Perfect Prompt
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          OptoPrompt is a competition platform that helps you develop optimized prompts
+          PromptLympics is a competition platform that helps you develop optimized prompts
           through crowdsourcing. Post challenges, compete for prizes, and discover the
           best prompt engineering solutions.
         </p>
@@ -77,7 +77,7 @@ export function LandingPage() {
 
       {/* Features */}
       <section className="container mx-auto px-4 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12">Why OptoPrompt?</h2>
+        <h2 className="text-3xl font-bold text-center mb-12">Why PromptLympics?</h2>
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           <div className="flex gap-4">
             <Zap className="h-6 w-6 text-primary flex-shrink-0 mt-1" />

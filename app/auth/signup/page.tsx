@@ -65,7 +65,7 @@ export default function SignUpPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold">
             <Trophy className="h-8 w-8" />
-            OptoPrompt
+            PromptLympics
           </Link>
         </div>
 
@@ -73,7 +73,7 @@ export default function SignUpPage() {
           <CardHeader>
             <CardTitle>Create Account</CardTitle>
             <CardDescription>
-              Get started with OptoPrompt today
+              Get started with PromptLympics today
             </CardDescription>
           </CardHeader>
           <CardContent>

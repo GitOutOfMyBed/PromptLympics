@@ -19,7 +19,7 @@ export function Navbar() {
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           <Trophy className="h-6 w-6" />
-          OptoPrompt
+          PromptLympics
         </Link>
 
         <div className="flex items-center gap-4">
