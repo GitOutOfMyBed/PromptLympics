@@ -33,11 +33,28 @@ export function SubmissionForm({ competition, userId }: SubmissionFormProps) {
       return
     }
 
+    // Validate prompt
+    if (!prompt.trim()) {
+      setError("Prompt cannot be empty")
+      setLoading(false)
+      return
+    }
+
     // Validate character limit
     if (competition.characterLimit && prompt.length > competition.characterLimit) {
       setError(`Prompt exceeds character limit of ${competition.characterLimit}`)
       setLoading(false)
       return
+    }
+
+    // Validate token limit (rough estimate: 1 token ≈ 4 characters)
+    if (competition.tokenLimit) {
+      const estimatedTokens = Math.ceil(prompt.length / 4)
+      if (estimatedTokens > competition.tokenLimit) {
+        setError(`Prompt may exceed token limit of ${competition.tokenLimit} (estimated: ${estimatedTokens})`)
+        setLoading(false)
+        return
+      }
     }
 
     try {

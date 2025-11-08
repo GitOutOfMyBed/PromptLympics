@@ -83,6 +83,99 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const validateForm = (): string | null => {
+    // Required fields validation
+    if (!formData.title.trim()) {
+      return "Title is required"
+    }
+    if (!formData.summary.trim()) {
+      return "Summary is required"
+    }
+    if (!formData.description.trim()) {
+      return "Description is required"
+    }
+    if (!formData.organizationName.trim()) {
+      return "Organization name is required"
+    }
+    if (!formData.modelType) {
+      return "Model type is required"
+    }
+    if (!formData.startDate) {
+      return "Start date is required"
+    }
+    if (!formData.endDate) {
+      return "End date is required"
+    }
+    if (!formData.trainingFile) {
+      return "Training data file is required"
+    }
+    if (!formData.validationFile) {
+      return "Validation data file is required"
+    }
+
+    // Date validation
+    const now = new Date()
+    const startDate = new Date(formData.startDate)
+    const endDate = new Date(formData.endDate)
+
+    if (isNaN(startDate.getTime())) {
+      return "Invalid start date"
+    }
+    if (isNaN(endDate.getTime())) {
+      return "Invalid end date"
+    }
+    if (startDate < now) {
+      return "Start date must be in the future"
+    }
+    if (endDate <= startDate) {
+      return "End date must be after start date"
+    }
+
+    // Prize validation
+    if (formData.totalPrize <= 0) {
+      return "Total prize must be greater than 0"
+    }
+
+    if (formData.prizeDistribution === "TOP_THREE") {
+      const first = formData.firstPlacePrize || 0
+      const second = formData.secondPlacePrize || 0
+      const third = formData.thirdPlacePrize || 0
+      const total = first + second + third
+
+      if (first <= 0 || second <= 0 || third <= 0) {
+        return "All prize values must be greater than 0 for top three distribution"
+      }
+      if (Math.abs(total - formData.totalPrize) > 0.01) {
+        return `Prize values must sum to total prize (${first + second + third} ≠ ${formData.totalPrize})`
+      }
+    }
+
+    // Limits validation
+    if (formData.characterLimit && formData.characterLimit < 1) {
+      return "Character limit must be at least 1"
+    }
+    if (formData.tokenLimit && formData.tokenLimit < 1) {
+      return "Token limit must be at least 1"
+    }
+
+    // Score validation
+    if (formData.minimumScore !== null && formData.minimumScore < 0) {
+      return "Minimum score cannot be negative"
+    }
+    if (formData.targetScore !== null && formData.targetScore < 0) {
+      return "Target score cannot be negative"
+    }
+    if (
+      formData.minimumScore !== null &&
+      formData.targetScore !== null &&
+      formData.targetScore < formData.minimumScore
+    ) {
+      return "Target score must be greater than minimum score"
+    }
+
+    return null
+  }
+
   const handleSubmit = async () => {
     setLoading(true)
     setError("")
@@ -94,6 +187,14 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
         return
       }
 
+      // Validate form
+      const validationError = validateForm()
+      if (validationError) {
+        setError(validationError)
+        setLoading(false)
+        return
+      }
+
       // Get Firebase ID token
       const token = await user.getIdToken()
       console.log("Token length:", token?.length)
@@ -101,14 +202,8 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       // First, upload files
       const formDataToSend = new FormData()
 
-      if (!formData.trainingFile || !formData.validationFile) {
-        setError("Please upload both training and validation files")
-        setLoading(false)
-        return
-      }
-
-      formDataToSend.append("trainingFile", formData.trainingFile)
-      formDataToSend.append("validationFile", formData.validationFile)
+      formDataToSend.append("trainingFile", formData.trainingFile!)
+      formDataToSend.append("validationFile", formData.validationFile!)
 
       console.log("Sending upload request with auth token")
       const uploadResponse = await fetch("/api/upload", {
