@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  competitions  Competition[]
+  submissions   Submission[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum CompetitionStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ModelType {
+  GPT_4
+  GPT_3_5_TURBO
+  CLAUDE_3_OPUS
+  CLAUDE_3_SONNET
+  CLAUDE_3_HAIKU
+  CUSTOM
+}
+
+enum PrizeDistribution {
+  WINNER_TAKES_ALL
+  TOP_THREE
+  THRESHOLD_BASED
+}
+
+model Competition {
+  id                  String              @id @default(cuid())
+  title               String
+  description         String              @db.Text
+  summary             String
+  organizationName    String
+
+  // Prize configuration
+  totalPrize          Float
+  firstPlacePrize     Float?
+  secondPlacePrize    Float?
+  thirdPlacePrize     Float?
+  prizeDistribution   PrizeDistribution   @default(WINNER_TAKES_ALL)
+
+  // Thresholds
+  minimumScore        Float?              // Minimum score required to win prize
+  targetScore         Float?              // Competition ends immediately if this score is reached
+
+  // Prompt requirements
+  examplePrompt       String?             @db.Text
+  characterLimit      Int?
+  tokenLimit          Int?
+
+  // Model and evaluation
+  modelType           ModelType
+  customModelUrl      String?
+
+  // Datasets
+  trainingDataUrl     String
+  validationDataUrl   String
+  trainingDataSize    Int
+  validationDataSize  Int
+
+  // Dates
+  startDate           DateTime
+  endDate             DateTime
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  // Status
+  status              CompetitionStatus   @default(DRAFT)
+
+  // Best submission tracking
+  bestScore           Float?
+  bestSubmissionId    String?
+
+  // Relations
+  organizerId         String
+  organizer           User                @relation(fields: [organizerId], references: [id])
+  submissions         Submission[]
+  testCases           TestCase[]
+}
+
+enum SubmissionStatus {
+  PENDING
+  EVALUATING
+  COMPLETED
+  FAILED
+}
+
+model Submission {
+  id              String            @id @default(cuid())
+  competitionId   String
+  userId          String
+
+  // Prompt content
+  prompt          String            @db.Text
+
+  // Evaluation results
+  score           Float?
+  accuracy        Float?
+  evaluationLog   String?           @db.Text
+
+  // Status
+  status          SubmissionStatus  @default(PENDING)
+  errorMessage    String?           @db.Text
+
+  // Timestamps
+  submittedAt     DateTime          @default(now())
+  evaluatedAt     DateTime?
+
+  // Relations
+  competition     Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId, score])
+  @@index([userId])
+}
+
+model TestCase {
+  id              String      @id @default(cuid())
+  competitionId   String
+
+  // Test case data
+  input           String      @db.Text
+  expectedOutput  String      @db.Text
+  isPublic        Boolean     @default(false)  // Public test cases are shown to participants
+
+  // Metadata
+  createdAt       DateTime    @default(now())
+
+  // Relations
+  competition     Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId])
+}
