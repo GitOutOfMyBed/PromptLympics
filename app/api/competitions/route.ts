@@ -2,13 +2,14 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { CompetitionStatus } from "@prisma/client"
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get("status")
 
-    const where = status ? { status } : {}
+    const where = status ? { status: status as CompetitionStatus } : {}
 
     const competitions = await prisma.competition.findMany({
       where,
