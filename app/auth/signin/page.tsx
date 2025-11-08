@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth"
+import { auth, googleProvider, githubProvider } from "@/firebase/firebasefrontend"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -22,24 +23,25 @@ export default function SignInPage() {
     setLoading(true)
     setError("")
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
-
-    if (result?.error) {
-      setError("Invalid email or password")
-      setLoading(false)
-    } else {
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
       router.push("/competitions")
-      router.refresh()
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password")
+      setLoading(false)
     }
   }
 
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
-    await signIn(provider, { callbackUrl: "/competitions" })
+    try {
+      const authProvider = provider === "google" ? googleProvider : githubProvider
+      await signInWithPopup(auth, authProvider)
+      router.push("/competitions")
+    } catch (err: any) {
+      setError(err.message || "Sign in failed")
+      setLoading(false)
+    }
   }
 
   return (

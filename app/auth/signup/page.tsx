@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth"
+import { auth, googleProvider, githubProvider } from "@/firebase/firebasefrontend"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -37,43 +38,25 @@ export default function SignUpPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Something went wrong")
-        setLoading(false)
-        return
-      }
-
-      // Auto sign in after registration
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        setError("Registration successful but sign in failed. Please try signing in.")
-        setLoading(false)
-      } else {
-        router.push("/competitions")
-        router.refresh()
-      }
-    } catch (error) {
-      setError("An error occurred. Please try again.")
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      await updateProfile(userCredential.user, { displayName: name })
+      router.push("/competitions")
+    } catch (err: any) {
+      setError(err.message || "An error occurred. Please try again.")
       setLoading(false)
     }
   }
 
   const handleOAuthSignIn = async (provider: string) => {
     setLoading(true)
-    await signIn(provider, { callbackUrl: "/competitions" })
+    try {
+      const authProvider = provider === "google" ? googleProvider : githubProvider
+      await signInWithPopup(auth, authProvider)
+      router.push("/competitions")
+    } catch (err: any) {
+      setError(err.message || "Sign in failed")
+      setLoading(false)
+    }
   }
 
   return (

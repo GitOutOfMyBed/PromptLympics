@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { verifyAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(
@@ -8,9 +7,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await verifyAuth(req)
 
-    if (!session) {
+    if (!auth?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -36,8 +35,8 @@ export async function GET(
 
     // Only allow user to view their own submission or competition organizer
     if (
-      submission.userId !== session.user.id &&
-      submission.competition.organizerId !== session.user.id
+      submission.userId !== auth.user.id &&
+      submission.competition.organizerId !== auth.user.id
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }

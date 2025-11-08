@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { verifyAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { evaluatePrompt } from "@/lib/evaluation"
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await verifyAuth(req)
 
-    if (!session) {
+    if (!auth?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -51,7 +50,7 @@ export async function POST(req: Request) {
     const submission = await prisma.submission.create({
       data: {
         competitionId,
-        userId: session.user.id,
+        userId: auth.user.id,
         prompt,
         status: "PENDING",
       },

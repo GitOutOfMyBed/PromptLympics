@@ -1,81 +1,38 @@
-import { NextAuthOptions } from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
-import GitHubProvider from "next-auth/providers/github"
+import { verifyIdToken } from "@/firebase/firebaseadmin"
 import { prisma } from "@/lib/prisma"
-import { compare } from "bcryptjs"
 
-export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID || "",
-      clientSecret: process.env.GITHUB_SECRET || "",
-    }),
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials")
-        }
+export async function verifyAuth(request: Request) {
+  const authHeader = request.headers.get("Authorization")
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        })
+  if (!authHeader?.startsWith("Bearer ")) {
+    return null
+  }
 
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials")
-        }
+  const token = authHeader.split("Bearer ")[1]
 
-        const isPasswordValid = await compare(
-          credentials.password,
-          user.password
-        )
+  try {
+    const decodedToken = await verifyIdToken(token)
 
-        if (!isPasswordValid) {
-          throw new Error("Invalid credentials")
-        }
+    let user = await prisma.user.findUnique({
+      where: { email: decodedToken.email },
+    })
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        }
-      },
-    }),
-  ],
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-    error: "/auth/error",
-  },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-      }
-      return session
-    },
-  },
+    if (!user && decodedToken.email) {
+      user = await prisma.user.create({
+        data: {
+          email: decodedToken.email,
+          name: decodedToken.name || decodedToken.email,
+          image: decodedToken.picture,
+        },
+      })
+    }
+
+    return {
+      user,
+      uid: decodedToken.uid,
+    }
+  } catch (error) {
+    console.error("Auth verification error:", error)
+    return null
+  }
 }

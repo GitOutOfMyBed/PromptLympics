@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { verifyAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CompetitionStatus } from "@prisma/client"
 
@@ -43,9 +42,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const auth = await verifyAuth(req)
 
-    if (!session) {
+    if (!auth?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -83,7 +82,7 @@ export async function POST(req: Request) {
         validationDataSize: data.validationDataSize,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
-        organizerId: session.user.id,
+        organizerId: auth.user.id,
         status: "ACTIVE",
       },
     })

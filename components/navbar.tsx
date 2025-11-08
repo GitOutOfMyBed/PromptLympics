@@ -1,12 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { useSession, signOut } from "next-auth/react"
+import { signOut } from "firebase/auth"
+import { auth } from "@/firebase/firebasefrontend"
+import { useAuth } from "@/components/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Trophy } from "lucide-react"
 
 export function Navbar() {
-  const { data: session } = useSession()
+  const { user } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut(auth)
+  }
 
   return (
     <nav className="border-b">
@@ -17,7 +23,7 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center gap-4">
-          {session ? (
+          {user ? (
             <>
               <Link href="/competitions">
                 <Button variant="ghost">Competitions</Button>
@@ -25,7 +31,7 @@ export function Navbar() {
               <Link href="/profile">
                 <Button variant="ghost">Profile</Button>
               </Link>
-              <Button onClick={() => signOut()} variant="outline">
+              <Button onClick={handleSignOut} variant="outline">
                 Sign Out
               </Button>
             </>
