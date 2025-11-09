@@ -1,6 +1,4 @@
 import { prisma } from "@/lib/prisma"
-import { readFile } from "fs/promises"
-import { join } from "path"
 
 type Competition = {
   id: string
@@ -27,15 +25,12 @@ export async function evaluatePrompt(
       data: { status: "EVALUATING" },
     })
 
-    // Load validation data
-    const validationPath = join(
-      process.cwd(),
-      "public",
-      competition.validationDataUrl
-    )
-    const validationData = JSON.parse(
-      await readFile(validationPath, "utf-8")
-    ) as TestCase[]
+    // Load validation data from Firebase Storage URL
+    const validationResponse = await fetch(competition.validationDataUrl)
+    if (!validationResponse.ok) {
+      throw new Error(`Failed to fetch validation data: ${validationResponse.statusText}`)
+    }
+    const validationData = await validationResponse.json() as TestCase[]
 
     // Evaluate prompt against test cases
     const results = await evaluateTestCases(
