@@ -116,7 +116,6 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
     }
 
     // Date validation
-    const now = new Date()
     const startDate = new Date(formData.startDate)
     const endDate = new Date(formData.endDate)
 
@@ -125,9 +124,6 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
     }
     if (isNaN(endDate.getTime())) {
       return "Invalid end date"
-    }
-    if (startDate < now) {
-      return "Start date must be in the future"
     }
     if (endDate <= startDate) {
       return "End date must be after start date"
