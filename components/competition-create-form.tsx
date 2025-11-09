@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/providers/auth-provider"
-import { storage } from "@/firebase/firebasefrontend"
+import { storage, auth } from "@/firebase/firebasefrontend"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -202,9 +202,26 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       const validationRef = ref(storage, `competitions/${user.uid}/${timestamp}/validation.json`)
 
       console.log("Uploading files to Firebase Storage...")
+      console.log("User UID:", user.uid)
+      console.log("User email:", user.email)
+      console.log("Path:", `competitions/${user.uid}/${timestamp}/training.json`)
+
+      // Check if user is authenticated
+      const currentUser = auth.currentUser
+      console.log("Is authenticated:", !!currentUser)
+      if (currentUser) {
+        const token = await currentUser.getIdToken()
+        console.log("Has token:", !!token)
+      }
 
       // Upload training file
-      await uploadBytes(trainingRef, formData.trainingFile!)
+      try {
+        await uploadBytes(trainingRef, formData.trainingFile!)
+        console.log("Training file uploaded successfully")
+      } catch (uploadError) {
+        console.error("Upload error:", uploadError)
+        throw uploadError
+      }
       const trainingUrl = await getDownloadURL(trainingRef)
 
       // Upload validation file
