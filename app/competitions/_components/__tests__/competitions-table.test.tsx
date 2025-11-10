@@ -12,7 +12,7 @@ describe('CompetitionsTable', () => {
       {
         id: '1',
         title: 'Test Competition',
-        summary: 'A test competition',
+        description: 'A test competition',
         organizationName: 'Test Org',
         totalPrize: 1000,
         startDate: new Date('2024-01-01'),
@@ -39,7 +39,7 @@ describe('CompetitionsTable', () => {
       {
         id: '1',
         title: 'New Competition',
-        summary: 'No submissions yet',
+        description: 'No submissions yet',
         organizationName: 'Test Org',
         totalPrize: 500,
         startDate: new Date('2024-01-01'),

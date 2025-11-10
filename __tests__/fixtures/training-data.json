@@ -1,0 +1,14 @@
+[
+  {
+    "input": "Classify the sentiment: I love this product!",
+    "expectedOutput": "positive"
+  },
+  {
+    "input": "Classify the sentiment: This is terrible.",
+    "expectedOutput": "negative"
+  },
+  {
+    "input": "Classify the sentiment: It's okay, nothing special.",
+    "expectedOutput": "neutral"
+  }
+]

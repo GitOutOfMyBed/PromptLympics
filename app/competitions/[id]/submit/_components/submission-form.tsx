@@ -114,35 +114,6 @@ export function SubmissionForm({ competition, userId }: SubmissionFormProps) {
         </Card>
       )}
 
-      {competition.testCases.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sample Test Cases</CardTitle>
-            <CardDescription>
-              Your prompt will be evaluated against these and other hidden test cases
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {competition.testCases.map((testCase: any) => (
-              <div key={testCase.id} className="space-y-2">
-                <div>
-                  <span className="font-semibold text-sm">Input:</span>
-                  <pre className="mt-1 p-2 bg-muted rounded text-sm overflow-x-auto">
-                    {testCase.input}
-                  </pre>
-                </div>
-                <div>
-                  <span className="font-semibold text-sm">Expected Output:</span>
-                  <pre className="mt-1 p-2 bg-muted rounded text-sm overflow-x-auto">
-                    {testCase.expectedOutput}
-                  </pre>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>

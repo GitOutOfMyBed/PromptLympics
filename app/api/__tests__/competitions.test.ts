@@ -26,7 +26,7 @@ describe('API Competition Service Layer', () => {
       {
         id: '1',
         title: 'Test Competition 1',
-        summary: 'Description 1',
+        description: 'Description 1',
         organizationName: 'Org 1',
         totalPrize: 1000,
         startDate: new Date('2024-01-01'),
@@ -39,7 +39,7 @@ describe('API Competition Service Layer', () => {
       {
         id: '2',
         title: 'Test Competition 2',
-        summary: 'Description 2',
+        description: 'Description 2',
         organizationName: 'Org 2',
         totalPrize: 2000,
         startDate: new Date('2024-02-01'),

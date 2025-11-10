@@ -37,8 +37,7 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-2">{competition.title}</h1>
-          <p className="text-muted-foreground">{competition.summary}</p>
+          <h1 className="text-4xl font-bold">{competition.title}</h1>
         </div>
         {isActive && session && !isOrganizer && (
           <Link href={`/competitions/${competition.id}/submit`}>
@@ -154,6 +153,13 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
                   <p className="text-muted-foreground">{competition.tokenLimit} tokens</p>
                 </div>
               )}
+
+              <div>
+                <h4 className="font-semibold mb-1">Submission Limit</h4>
+                <p className="text-muted-foreground">
+                  {competition.maxSubmissionsPerUser} submission{competition.maxSubmissionsPerUser !== 1 ? 's' : ''} per participant
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -264,34 +270,6 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
                   Download Training Data ({competition.trainingDataSize} samples)
                 </Button>
               </div>
-
-              {competition.testCases.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2">Sample Test Cases</h4>
-                  <div className="space-y-4">
-                    {competition.testCases.map((testCase: any) => (
-                      <Card key={testCase.id}>
-                        <CardContent className="pt-6">
-                          <div className="space-y-2">
-                            <div>
-                              <span className="font-semibold">Input:</span>
-                              <pre className="mt-1 p-2 bg-muted rounded text-sm overflow-x-auto">
-                                {testCase.input}
-                              </pre>
-                            </div>
-                            <div>
-                              <span className="font-semibold">Expected Output:</span>
-                              <pre className="mt-1 p-2 bg-muted rounded text-sm overflow-x-auto">
-                                {testCase.expectedOutput}
-                              </pre>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>

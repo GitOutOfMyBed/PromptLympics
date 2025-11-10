@@ -16,10 +16,11 @@ A Kaggle-style platform for crowdsourced prompt engineering competitions.
 - **Frontend**: Next.js 14 (App Router), React, TypeScript, Tailwind CSS
 - **UI Components**: shadcn/ui
 - **Backend**: Next.js API Routes
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: NextAuth.js
-- **File Upload**: Next.js API with filesystem storage
-- **LLM Integration**: OpenAI & Anthropic APIs
+- **Database**: PostgreSQL (Neon) with Prisma ORM
+- **Authentication**: Firebase Auth
+- **Storage**: Firebase Storage (training/validation data)
+- **Encryption**: AES-256-GCM for API keys
+- **LLM Integration**: OpenAI, Anthropic, Google AI (via Vercel AI SDK)
 
 ## Getting Started
 
@@ -100,31 +101,46 @@ After setting up your database, run migrations:
 npx prisma migrate deploy
 ```
 
+## Architecture
+
+**Security Model**:
+- Organizers provide their own API keys (not platform keys)
+- Keys encrypted with AES-256-GCM before storage
+- Validation data stored in Firebase Storage (private, Admin SDK access only)
+- Training data public (participants download for testing)
+
+**Evaluation Flow**:
+1. User submits prompt → saved as PENDING
+2. Background job fetches validation data from Firebase
+3. Runs prompt against each test case using organizer's API key
+4. Compares outputs, calculates accuracy score
+5. Updates submission status to COMPLETED
+6. Updates competition leaderboard if score is best
+
+**Key Modules**:
+- `lib/evaluation.ts` - Evaluation engine
+- `lib/llm.ts` - Multi-provider LLM interface
+- `lib/encryption.ts` - API key encryption
+- `firebase/firebaseadmin-storage.ts` - Private data access
+
 ## Project Structure
 
 ```
-├── app/                      # Next.js App Router pages
+├── app/
 │   ├── api/                 # API routes
-│   │   ├── auth/           # Authentication endpoints
 │   │   ├── competitions/   # Competition CRUD
-│   │   ├── submissions/    # Submission endpoints
-│   │   └── upload/         # File upload handler
-│   ├── auth/               # Auth pages (signin, signup)
-│   ├── competitions/       # Competition pages
-│   ├── profile/            # User profile
-│   └── layout.tsx          # Root layout
-├── components/              # React components
-│   ├── ui/                 # shadcn/ui components
-│   └── ...                 # Feature components
-├── lib/                     # Utility libraries
-│   ├── auth.ts             # NextAuth configuration
-│   ├── prisma.ts           # Prisma client
-│   ├── evaluation.ts       # Prompt evaluation logic
-│   └── utils.ts            # Utility functions
-├── prisma/                  # Database schema
-│   └── schema.prisma       # Prisma schema
-└── public/                  # Static files
-    └── uploads/            # User-uploaded files
+│   │   └── submissions/    # Submission handling & evaluation
+│   ├── competitions/       # Competition pages (list, detail, create, submit)
+│   └── _components/        # Shared components
+├── lib/                     # Core utilities
+│   ├── evaluation.ts       # Prompt evaluation engine
+│   ├── llm.ts              # LLM provider interface
+│   ├── encryption.ts       # API key encryption
+│   └── types.ts            # Shared types
+├── firebase/                # Firebase integration
+│   ├── firebasefrontend.ts # Client SDK (auth, public storage)
+│   └── firebaseadmin-storage.ts # Admin SDK (private validation data)
+└── prisma/schema.prisma     # Database schema
 ```
 
 ## Key Features Explained

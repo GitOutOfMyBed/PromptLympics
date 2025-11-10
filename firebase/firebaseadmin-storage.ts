@@ -1,17 +1,38 @@
 import * as admin from "firebase-admin"
+import * as fs from "fs"
+import * as path from "path"
 
 // Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
+  const serviceAccountKeyOrPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
 
-  if (!serviceAccount) {
+  if (!serviceAccountKeyOrPath) {
     throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set")
   }
 
-  admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(serviceAccount)),
-    storageBucket: "promptlympics.firebasestorage.app",
-  })
+  try {
+    let parsedCredentials: any
+
+    // Check if it's a file path or JSON string
+    if (serviceAccountKeyOrPath.trim().startsWith("{")) {
+      // It's a JSON string (for production environments like Vercel)
+      parsedCredentials = JSON.parse(serviceAccountKeyOrPath.trim())
+    } else {
+      // It's a file path (for local development)
+      const absolutePath = path.resolve(process.cwd(), serviceAccountKeyOrPath)
+      const serviceAccountJson = fs.readFileSync(absolutePath, "utf-8")
+      parsedCredentials = JSON.parse(serviceAccountJson)
+    }
+
+    admin.initializeApp({
+      credential: admin.credential.cert(parsedCredentials),
+      storageBucket: "promptlympics.firebasestorage.app",
+    })
+  } catch (error) {
+    console.error("Failed to load Firebase service account:", serviceAccountKeyOrPath.substring(0, 50))
+    console.error("Error:", error)
+    throw new Error(`Invalid FIREBASE_SERVICE_ACCOUNT_KEY: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
 }
 
 const bucket = admin.storage().bucket()

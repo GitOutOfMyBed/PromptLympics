@@ -12,30 +12,15 @@ import {
 } from "@/app/_components/ui/table"
 import { Badge } from "@/app/_components/ui/badge"
 import { Card } from "@/app/_components/ui/card"
-
-type Competition = {
-  id: string
-  title: string
-  summary: string
-  organizationName: string
-  totalPrize: number
-  startDate: Date
-  endDate: Date
-  status: string
-  bestScore: number | null
-  _count: {
-    submissions: number
-  }
-  organizer: {
-    name: string | null
-    email: string
-  }
-}
+import type { Competition } from "@/lib/types"
 
 export function CompetitionsTable({
   competitions,
 }: {
-  competitions: Competition[]
+  competitions: (Competition & {
+    _count: { submissions: number }
+    organizer: { name: string | null; email: string }
+  })[]
 }) {
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -86,8 +71,8 @@ export function CompetitionsTable({
                   >
                     <div>
                       <div className="font-medium">{competition.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {competition.summary}
+                      <div className="text-sm text-muted-foreground line-clamp-2">
+                        {competition.description}
                       </div>
                     </div>
                   </Link>

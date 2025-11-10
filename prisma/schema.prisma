@@ -60,21 +60,21 @@ model Competition {
   id                 String            @id @default(cuid())
   title              String
   description        String
-  summary            String
   organizationName   String
   totalPrize         Float
   firstPlacePrize    Float?
   secondPlacePrize   Float?
   thirdPlacePrize    Float?
   prizeDistribution  PrizeDistribution @default(WINNER_TAKES_ALL)
-  minimumScore       Float?
-  targetScore        Float?
-  examplePrompt      String?
-  characterLimit     Int?
-  tokenLimit         Int?
+  minimumScore              Float?
+  targetScore               Float?
+  maxSubmissionsPerUser     Int               @default(3)  // Maximum number of submissions per participant
+  examplePrompt             String?
+  characterLimit            Int?
+  tokenLimit                Int?
   customModelUrl     String?
-  trainingDataUrl    String
-  validationDataUrl  String
+  trainingDataUrl    String            // Public download URL for training data
+  validationDataUrl  String            // Private storage path (not a URL - accessed via Admin SDK)
   trainingDataSize   Int
   validationDataSize Int
   startDate          DateTime
@@ -85,7 +85,6 @@ model Competition {
   bestScore          Float?
   bestSubmissionId   String?
   organizerId        String
-  validationDataPath String?
   modelType          String
 
   // API Key configuration (encrypted)
@@ -94,7 +93,6 @@ model Competition {
 
   organizer          User              @relation(fields: [organizerId], references: [id])
   submissions        Submission[]
-  testCases          TestCase[]
 }
 
 model Submission {
@@ -114,18 +112,6 @@ model Submission {
 
   @@index([competitionId, score])
   @@index([userId])
-}
-
-model TestCase {
-  id             String      @id @default(cuid())
-  competitionId  String
-  input          String
-  expectedOutput String
-  isPublic       Boolean     @default(false)
-  createdAt      DateTime    @default(now())
-  competition    Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-
-  @@index([competitionId])
 }
 
 enum CompetitionStatus {

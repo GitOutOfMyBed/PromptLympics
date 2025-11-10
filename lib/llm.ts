@@ -1,13 +1,18 @@
+/**
+ * LLM Interface Module
+ * Provides unified interface for calling OpenAI, Anthropic, and Google models.
+ * Handles model selection, API keys, and cost estimation.
+ */
+
 import { generateText } from 'ai'
-import { openai } from '@ai-sdk/openai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { google } from '@ai-sdk/google'
+import { openai, createOpenAI } from '@ai-sdk/openai'
+import { anthropic, createAnthropic } from '@ai-sdk/anthropic'
+import { google, createGoogleGenerativeAI } from '@ai-sdk/google'
 
 export interface LLMCallOptions {
   model: string
   prompt: string
   temperature?: number
-  maxTokens?: number
   apiKey?: string  // Optional custom API key
 }
 
@@ -83,14 +88,29 @@ function getModel(modelName: string, apiKey?: string) {
 
   switch (modelConfig.provider) {
     case 'openai':
-      // Pass custom API key to OpenAI provider
-      return openai(modelName, apiKey ? { apiKey } : undefined)
+      // Use custom API key if provided, otherwise use default from env
+      if (apiKey) {
+        const customOpenAI = createOpenAI({ apiKey })
+        return customOpenAI(modelName)
+      }
+      return openai(modelName)
+
     case 'anthropic':
-      // Pass custom API key to Anthropic provider
-      return anthropic(modelName, apiKey ? { apiKey } : undefined)
+      // Use custom API key if provided, otherwise use default from env
+      if (apiKey) {
+        const customAnthropic = createAnthropic({ apiKey })
+        return customAnthropic(modelName)
+      }
+      return anthropic(modelName)
+
     case 'google':
-      // Pass custom API key to Google provider
-      return google(modelName, apiKey ? { apiKey } : undefined)
+      // Use custom API key if provided, otherwise use default from env
+      if (apiKey) {
+        const customGoogle = createGoogleGenerativeAI({ apiKey })
+        return customGoogle(modelName)
+      }
+      return google(modelName)
+
     default:
       throw new Error(`Unknown provider for model: ${modelName}`)
   }
@@ -104,7 +124,6 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
     model,
     prompt,
     temperature = 0,
-    maxTokens = 500,
     apiKey,  // Extract custom API key if provided
   } = options
 
@@ -113,7 +132,6 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
       model: getModel(model, apiKey),  // Pass API key to getModel
       prompt,
       temperature,
-      maxTokens,
     })
 
     return text.trim()

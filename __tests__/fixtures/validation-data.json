@@ -1,0 +1,22 @@
+[
+  {
+    "input": "Classify the sentiment: This is amazing!",
+    "expectedOutput": "positive"
+  },
+  {
+    "input": "Classify the sentiment: I hate this.",
+    "expectedOutput": "negative"
+  },
+  {
+    "input": "Classify the sentiment: It's fine.",
+    "expectedOutput": "neutral"
+  },
+  {
+    "input": "Classify the sentiment: Best purchase ever!",
+    "expectedOutput": "positive"
+  },
+  {
+    "input": "Classify the sentiment: Waste of money.",
+    "expectedOutput": "negative"
+  }
+]

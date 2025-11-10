@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma"
 import { CompetitionStatus } from "@prisma/client"
 import { encryptApiKey, getProviderFromModel } from "@/lib/encryption"
 
+/**
+ * GET /api/competitions
+ * Returns all competitions with submission counts and organizer info.
+ * Supports optional ?status=ACTIVE filter.
+ */
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url)
@@ -41,6 +46,11 @@ export async function GET(req: Request) {
   }
 }
 
+/**
+ * POST /api/competitions
+ * Creates a new competition. Validates prizes, encrypts API key, uploads data files.
+ * Requires authentication. Sets competition status to ACTIVE.
+ */
 export async function POST(req: Request) {
   try {
     const auth = await verifyAuth(req)
@@ -119,7 +129,6 @@ export async function POST(req: Request) {
     const competition = await prisma.competition.create({
       data: {
         title: data.title,
-        summary: data.summary,
         description: data.description,
         organizationName: data.organizationName,
         totalPrize: data.totalPrize,

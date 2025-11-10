@@ -1,24 +1,22 @@
+/**
+ * Prompt Evaluation Engine
+ * Runs submitted prompts against validation test cases and scores them.
+ * Uses organizer's encrypted API key for LLM calls.
+ */
+
 import { prisma } from "@/lib/prisma"
 import { getValidationData } from "@/firebase/firebaseadmin-storage"
 import { callLLM as callLLMWithVercelAI } from "@/lib/llm"
 import { decryptApiKey } from "@/lib/encryption"
+import type { Competition, TestCase } from "@/lib/types"
 
-type Competition = {
-  id: string
-  modelType: string
-  validationDataUrl: string
-  validationDataPath: string | null
-  targetScore: number | null
-  organizerId: string
-  encryptedApiKey: string | null
-  apiKeyProvider: string | null
-}
-
-type TestCase = {
-  input: string
-  expectedOutput: string
-}
-
+/**
+ * Evaluates a prompt submission against validation test cases.
+ * Runs asynchronously - updates submission status as it progresses.
+ * @param submissionId - ID of submission to evaluate
+ * @param competition - Competition details including model and validation data
+ * @param prompt - User's submitted prompt to test
+ */
 export async function evaluatePrompt(
   submissionId: string,
   competition: Competition,
@@ -33,8 +31,7 @@ export async function evaluatePrompt(
 
     // Load validation data from Firebase Storage using Admin SDK
     // This bypasses security rules and fetches private validation data
-    const validationPath = competition.validationDataPath || competition.validationDataUrl
-    const validationData = await getValidationData(validationPath) as TestCase[]
+    const validationData = await getValidationData(competition.validationDataUrl) as TestCase[]
 
     // Evaluate prompt against test cases
     const results = await evaluateTestCases(
@@ -167,7 +164,6 @@ async function callLLM(
     model: modelName,
     prompt: fullPrompt,
     temperature: 0,
-    maxTokens: 500,
     apiKey,  // Will use env var if undefined
   })
 }

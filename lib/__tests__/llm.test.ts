@@ -32,7 +32,6 @@ describe('LLM Module', () => {
         model: 'gpt-4o-mini',
         prompt: 'Test prompt',
         temperature: 0.5,
-        maxTokens: 100,
       })
 
       expect(generateText).toHaveBeenCalledWith({
@@ -42,7 +41,6 @@ describe('LLM Module', () => {
         }),
         prompt: 'Test prompt',
         temperature: 0.5,
-        maxTokens: 100,
       })
       expect(result).toBe(mockText)
     })
@@ -63,7 +61,6 @@ describe('LLM Module', () => {
         }),
         prompt: 'Another test',
         temperature: 0,
-        maxTokens: 500,
       })
       expect(result).toBe(mockText)
     })
