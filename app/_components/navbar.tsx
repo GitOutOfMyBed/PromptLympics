@@ -5,7 +5,7 @@ import { signOut } from "firebase/auth"
 import { auth } from "@/firebase/firebasefrontend"
 import { useAuth } from "@/app/_components/providers/auth-provider"
 import { Button } from "@/app/_components/ui/button"
-import { Trophy } from "lucide-react"
+import { Trophy, Plus } from "lucide-react"
 
 export function Navbar() {
   const { user } = useAuth()
@@ -30,6 +30,12 @@ export function Navbar() {
               </Link>
               <Link href="/profile">
                 <Button variant="ghost">Profile</Button>
+              </Link>
+              <Link href="/competitions/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Competition
+                </Button>
               </Link>
               <Button onClick={handleSignOut} variant="outline">
                 Sign Out

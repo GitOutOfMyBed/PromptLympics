@@ -35,6 +35,17 @@ import {
 import { getSupportedModelsList } from "@/lib/llm";
 import type { CompetitionFormData } from "@/lib/types";
 
+const getInitialDates = () => {
+  const today = new Date();
+  const oneWeekLater = new Date(today);
+  oneWeekLater.setDate(today.getDate() + 7);
+
+  return {
+    startDate: today.toISOString().split('T')[0],
+    endDate: oneWeekLater.toISOString().split('T')[0],
+  };
+};
+
 const INITIAL_FORM_DATA: CompetitionFormData = {
   title: "",
   description: "",
@@ -51,8 +62,7 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
   minimumScore: null,
   targetScore: null,
   maxSubmissionsPerUser: 3,
-  startDate: "",
-  endDate: "",
+  ...getInitialDates(),
   trainingFile: null,
   validationFile: null,
   useOrganizerKey: false,
@@ -862,10 +872,18 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
           <CardHeader>
             <CardTitle>Prize Distribution</CardTitle>
             <CardDescription>
-              Configure how prizes will be awarded
+              Coming Soon - Prize money feature will be available in a future update
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <Alert>
+              <AlertDescription>
+                Prize money functionality is currently under development. For now, all competitions are set with $0 prize pool.
+                This feature will be enabled in an upcoming release.
+              </AlertDescription>
+            </Alert>
+
+            {/* Commented out - Prize configuration will be available soon
             <div className="space-y-2">
               <Label htmlFor="totalPrize">Total Prize Pool*</Label>
               <Input
@@ -957,6 +975,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                 </div>
               </div>
             )}
+            */}
 
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-lg font-semibold">Competition Rules</h3>
@@ -1000,7 +1019,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                     placeholder="e.g., 0.80"
                   />
                   <p className="text-sm text-muted-foreground">
-                    No prize if this threshold isn&apos;t met
+                    Required minimum accuracy to qualify as winner
                   </p>
                 </div>
 

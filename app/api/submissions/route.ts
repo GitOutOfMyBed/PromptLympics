@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { evaluatePrompt } from "@/lib/evaluation";
+import { updateExpiredCompetitions } from "@/lib/utils";
 
 /**
  * POST /api/submissions
@@ -25,6 +26,9 @@ export async function POST(req: Request) {
       );
     }
 
+    // Update expired competitions before checking status
+    await updateExpiredCompetitions();
+
     // Get competition
     const competition = await prisma.competition.findUnique({
       where: { id: competitionId },
@@ -37,11 +41,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if competition is active
-    if (
-      competition.status !== "ACTIVE" ||
-      new Date() > new Date(competition.endDate)
-    ) {
+    // Check if competition is active (status is now kept up-to-date by updateExpiredCompetitions)
+    if (competition.status !== "ACTIVE") {
       return NextResponse.json(
         { error: "Competition is not active" },
         { status: 400 }

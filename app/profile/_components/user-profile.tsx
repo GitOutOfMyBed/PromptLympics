@@ -212,8 +212,8 @@ export function UserProfile({ user }: UserProfileProps) {
                             {competition.title}
                           </Link>
                         </TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(competition.totalPrize)}
+                        <TableCell className="font-medium text-muted-foreground">
+                          Coming Soon
                         </TableCell>
                         <TableCell>
                           <Badge

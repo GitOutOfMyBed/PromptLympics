@@ -35,8 +35,17 @@ export function CompetitionsTable({
     }
   }
 
-  const isActive = (endDate: Date) => {
-    return new Date() < new Date(endDate)
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "ACTIVE":
+        return "Active"
+      case "COMPLETED":
+        return "Ended"
+      case "CANCELLED":
+        return "Cancelled"
+      default:
+        return status
+    }
   }
 
   return (
@@ -78,8 +87,8 @@ export function CompetitionsTable({
                   </Link>
                 </TableCell>
                 <TableCell>{competition.organizationName}</TableCell>
-                <TableCell className="font-medium">
-                  {formatCurrency(competition.totalPrize)}
+                <TableCell className="font-medium text-muted-foreground">
+                  Coming Soon
                 </TableCell>
                 <TableCell>{formatDate(competition.startDate)}</TableCell>
                 <TableCell>{formatDate(competition.endDate)}</TableCell>
@@ -91,11 +100,7 @@ export function CompetitionsTable({
                 <TableCell>{competition._count.submissions}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusVariant(competition.status)}>
-                    {isActive(competition.endDate) && competition.status === "ACTIVE"
-                      ? "Active"
-                      : competition.status === "COMPLETED"
-                      ? "Ended"
-                      : competition.status}
+                    {getStatusLabel(competition.status)}
                   </Badge>
                 </TableCell>
               </TableRow>

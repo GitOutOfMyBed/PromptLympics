@@ -70,7 +70,7 @@ export default function SubmitPage({
   }
 
   // Check if competition is still active
-  const isActive = competition && new Date() < new Date(competition.endDate) && competition.status === "ACTIVE"
+  const isActive = competition && competition.status === "ACTIVE"
 
   if (!isActive) {
     router.push(`/competitions/${params.id}`)

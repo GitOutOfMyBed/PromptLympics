@@ -3,6 +3,7 @@ import { verifyAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CompetitionStatus } from "@prisma/client"
 import { encryptApiKey, getProviderFromModel } from "@/lib/encryption"
+import { updateExpiredCompetitions } from "@/lib/utils"
 
 /**
  * GET /api/competitions
@@ -11,6 +12,9 @@ import { encryptApiKey, getProviderFromModel } from "@/lib/encryption"
  */
 export async function GET(req: Request) {
   try {
+    // Update expired competitions before fetching
+    await updateExpiredCompetitions()
+
     const { searchParams } = new URL(req.url)
     const status = searchParams.get("status")
 

@@ -24,7 +24,7 @@ type CompetitionDetailsProps = {
 }
 
 export function CompetitionDetails({ competition, session }: CompetitionDetailsProps) {
-  const isActive = new Date() < new Date(competition.endDate) && competition.status === "ACTIVE"
+  const isActive = competition.status === "ACTIVE"
   const isOrganizer = session?.user?.uid === competition.organizerId
 
   const downloadTestCases = () => {
@@ -57,7 +57,8 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(competition.totalPrize)}</div>
+            <div className="text-2xl font-bold text-muted-foreground">Coming Soon</div>
+            <p className="text-xs text-muted-foreground mt-1">Feature under development</p>
           </CardContent>
         </Card>
 
@@ -176,6 +177,7 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
             </Card>
           )}
 
+          {/* Prize Distribution - Coming Soon
           <Card>
             <CardHeader>
               <CardTitle>Prize Distribution</CardTitle>
@@ -203,6 +205,7 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
               </div>
             </CardContent>
           </Card>
+          */}
         </TabsContent>
 
         <TabsContent value="leaderboard">
