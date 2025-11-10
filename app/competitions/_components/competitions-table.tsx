@@ -9,9 +9,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
+} from "@/app/_components/ui/table"
+import { Badge } from "@/app/_components/ui/badge"
+import { Card } from "@/app/_components/ui/card"
 
 type Competition = {
   id: string

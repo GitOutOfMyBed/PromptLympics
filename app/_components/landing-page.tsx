@@ -1,8 +1,8 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/app/_components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card"
 import { Trophy, Users, Zap, Target } from "lucide-react"
-import { Navbar } from "@/components/navbar"
+import { Navbar } from "@/app/_components/navbar"
 
 export function LandingPage() {
   return (

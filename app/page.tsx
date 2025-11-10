@@ -2,8 +2,8 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { LandingPage } from "@/components/landing-page"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { LandingPage } from "@/app/_components/landing-page"
 
 export default function Home() {
   const { user, loading } = useAuth()

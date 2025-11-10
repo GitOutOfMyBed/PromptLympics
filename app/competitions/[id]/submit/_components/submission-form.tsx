@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Button } from "@/app/_components/ui/button"
+import { Textarea } from "@/app/_components/ui/textarea"
+import { Label } from "@/app/_components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card"
+import { Alert, AlertDescription } from "@/app/_components/ui/alert"
 import { Loader2 } from "lucide-react"
 
 type SubmissionFormProps = {

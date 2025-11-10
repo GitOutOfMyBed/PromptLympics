@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Navbar } from "@/components/navbar"
-import { CompetitionDetails } from "@/components/competition-details"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Navbar } from "@/app/_components/navbar"
+import { CompetitionDetails } from "./_components/competition-details"
 
 export default function CompetitionPage({
   params,

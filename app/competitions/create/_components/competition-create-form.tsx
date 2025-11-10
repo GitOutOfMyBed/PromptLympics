@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
+import { useAuth } from "@/app/_components/providers/auth-provider"
 import { storage, auth } from "@/firebase/firebasefrontend"
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/app/_components/ui/button"
+import { Input } from "@/app/_components/ui/input"
+import { Textarea } from "@/app/_components/ui/textarea"
+import { Label } from "@/app/_components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card"
+import { Alert, AlertDescription } from "@/app/_components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/app/_components/ui/select"
+import { Checkbox } from "@/app/_components/ui/checkbox"
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { getSupportedModelsList } from "@/lib/llm"
 
 type CompetitionFormData = {
   title: string
@@ -35,6 +36,8 @@ type CompetitionFormData = {
   endDate: string
   trainingFile: File | null
   validationFile: File | null
+  useOrganizerKey: boolean
+  apiKey: string
 }
 
 const INITIAL_FORM_DATA: CompetitionFormData = {
@@ -42,7 +45,7 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
   summary: "",
   description: "",
   organizationName: "",
-  modelType: "GPT_4",
+  modelType: "gpt-4o-mini",
   characterLimit: null,
   tokenLimit: null,
   examplePrompt: "",
@@ -57,6 +60,8 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
   endDate: "",
   trainingFile: null,
   validationFile: null,
+  useOrganizerKey: false,
+  apiKey: "",
 }
 
 export function CompetitionCreateForm({ userId }: { userId: string }) {
@@ -130,8 +135,13 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
     }
 
     // Prize validation
-    if (formData.totalPrize <= 0) {
-      return "Total prize must be greater than 0"
+    if (formData.totalPrize < 0) {
+      return "Total prize cannot be negative"
+    }
+
+    // Prizes must be whole dollar amounts (no cents)
+    if (!Number.isInteger(formData.totalPrize)) {
+      return "Total prize must be a whole dollar amount (no cents)"
     }
 
     if (formData.prizeDistribution === "TOP_THREE") {
@@ -140,11 +150,16 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       const third = formData.thirdPlacePrize || 0
       const total = first + second + third
 
-      if (first <= 0 || second <= 0 || third <= 0) {
-        return "All prize values must be greater than 0 for top three distribution"
+      if (first < 0 || second < 0 || third < 0) {
+        return "Prize values cannot be negative"
       }
-      if (Math.abs(total - formData.totalPrize) > 0.01) {
-        return `Prize values must sum to total prize (${first + second + third} ≠ ${formData.totalPrize})`
+
+      if (!Number.isInteger(first) || !Number.isInteger(second) || !Number.isInteger(third)) {
+        return "Prize values must be whole dollar amounts (no cents)"
+      }
+
+      if (total !== formData.totalPrize) {
+        return `Prize values must sum to total prize (${total} ≠ ${formData.totalPrize})`
       }
     }
 
@@ -169,6 +184,24 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       formData.targetScore < formData.minimumScore
     ) {
       return "Target score must be greater than minimum score"
+    }
+
+    // API key validation
+    if (formData.useOrganizerKey) {
+      if (!formData.apiKey) {
+        return "API key is required when using your own key"
+      }
+
+      // Validate API key format
+      if (formData.modelType.startsWith('gpt') && !formData.apiKey.startsWith('sk-')) {
+        return "Invalid OpenAI API key format (should start with 'sk-')"
+      }
+      if (formData.modelType.startsWith('claude') && !formData.apiKey.startsWith('sk-ant-')) {
+        return "Invalid Anthropic API key format (should start with 'sk-ant-')"
+      }
+      if (formData.modelType.startsWith('gemini') && !formData.apiKey.startsWith('AIza')) {
+        return "Invalid Google AI API key format (should start with 'AIza')"
+      }
     }
 
     return null
@@ -200,11 +233,13 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       const timestamp = Date.now()
       const trainingRef = ref(storage, `competitions/${user.uid}/${timestamp}/training.json`)
       const validationRef = ref(storage, `competitions/${user.uid}/${timestamp}/validation.json`)
+      const validationPath = `competitions/${user.uid}/${timestamp}/validation.json`
 
       console.log("Uploading files to Firebase Storage...")
       console.log("User UID:", user.uid)
       console.log("User email:", user.email)
-      console.log("Path:", `competitions/${user.uid}/${timestamp}/training.json`)
+      console.log("Training path:", `competitions/${user.uid}/${timestamp}/training.json`)
+      console.log("Validation path:", validationPath)
 
       // Check if user is authenticated
       const currentUser = auth.currentUser
@@ -214,7 +249,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
         console.log("Has token:", !!token)
       }
 
-      // Upload training file
+      // Upload training file (public - get download URL)
       try {
         await uploadBytes(trainingRef, formData.trainingFile!)
         console.log("Training file uploaded successfully")
@@ -224,9 +259,9 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       }
       const trainingUrl = await getDownloadURL(trainingRef)
 
-      // Upload validation file
+      // Upload validation file (private - only store path)
       await uploadBytes(validationRef, formData.validationFile!)
-      const validationUrl = await getDownloadURL(validationRef)
+      console.log("Validation file uploaded successfully")
 
       // Parse files to get sizes
       const trainingText = await formData.trainingFile!.text()
@@ -244,13 +279,14 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       const competitionData = {
         ...formData,
         trainingDataUrl: trainingUrl,
-        validationDataUrl: validationUrl,
+        validationDataUrl: "",  // Deprecated - keeping for schema compatibility
+        validationDataPath: validationPath,
         trainingDataSize: trainingSize,
         validationDataSize: validationSize,
-        totalPrize: parseFloat(formData.totalPrize.toString()),
-        firstPlacePrize: formData.firstPlacePrize ? parseFloat(formData.firstPlacePrize.toString()) : null,
-        secondPlacePrize: formData.secondPlacePrize ? parseFloat(formData.secondPlacePrize.toString()) : null,
-        thirdPlacePrize: formData.thirdPlacePrize ? parseFloat(formData.thirdPlacePrize.toString()) : null,
+        totalPrize: parseInt(formData.totalPrize.toString()),
+        firstPlacePrize: formData.firstPlacePrize ? parseInt(formData.firstPlacePrize.toString()) : null,
+        secondPlacePrize: formData.secondPlacePrize ? parseInt(formData.secondPlacePrize.toString()) : null,
+        thirdPlacePrize: formData.thirdPlacePrize ? parseInt(formData.thirdPlacePrize.toString()) : null,
       }
 
       const response = await fetch("/api/competitions", {
@@ -398,7 +434,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="modelType">Model Type*</Label>
+              <Label htmlFor="modelType">LLM Model*</Label>
               <Select
                 value={formData.modelType}
                 onValueChange={(value) => updateFormData("modelType", value)}
@@ -407,13 +443,94 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="GPT_4">GPT-4</SelectItem>
-                  <SelectItem value="GPT_3_5_TURBO">GPT-3.5 Turbo</SelectItem>
-                  <SelectItem value="CLAUDE_3_OPUS">Claude 3 Opus</SelectItem>
-                  <SelectItem value="CLAUDE_3_SONNET">Claude 3 Sonnet</SelectItem>
-                  <SelectItem value="CLAUDE_3_HAIKU">Claude 3 Haiku</SelectItem>
+                  {/* Group by provider for better organization */}
+                  <div className="text-xs font-semibold px-2 py-1 text-muted-foreground">OpenAI</div>
+                  {getSupportedModelsList()
+                    .filter(model => model.provider === 'openai')
+                    .map(model => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))
+                  }
+
+                  <div className="text-xs font-semibold px-2 py-1 text-muted-foreground mt-2">Anthropic</div>
+                  {getSupportedModelsList()
+                    .filter(model => model.provider === 'anthropic')
+                    .map(model => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))
+                  }
+
+                  <div className="text-xs font-semibold px-2 py-1 text-muted-foreground mt-2">Google</div>
+                  {getSupportedModelsList()
+                    .filter(model => model.provider === 'google')
+                    .map(model => (
+                      <SelectItem key={model.value} value={model.value}>
+                        {model.label}
+                      </SelectItem>
+                    ))
+                  }
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* API Key Configuration */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="useOrganizerKey"
+                  checked={formData.useOrganizerKey}
+                  onCheckedChange={(checked) => updateFormData("useOrganizerKey", checked as boolean)}
+                />
+                <Label htmlFor="useOrganizerKey" className="text-sm font-medium cursor-pointer">
+                  Use my own API key for evaluations
+                </Label>
+              </div>
+
+              {formData.useOrganizerKey && (
+                <>
+                  <Alert>
+                    <AlertDescription>
+                      Your API key will be encrypted and used only for evaluating submissions to this competition.
+                      The key is never shared with participants.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKey">
+                      {formData.modelType.startsWith('gpt') && 'OpenAI API Key*'}
+                      {formData.modelType.startsWith('claude') && 'Anthropic API Key*'}
+                      {formData.modelType.startsWith('gemini') && 'Google AI API Key*'}
+                    </Label>
+                    <Input
+                      id="apiKey"
+                      type="password"
+                      placeholder={
+                        formData.modelType.startsWith('gpt') ? 'sk-...' :
+                        formData.modelType.startsWith('claude') ? 'sk-ant-...' :
+                        'AIza...'
+                      }
+                      value={formData.apiKey}
+                      onChange={(e) => updateFormData("apiKey", e.target.value)}
+                      required={formData.useOrganizerKey}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.modelType.startsWith('gpt') && (
+                        <>Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">OpenAI Dashboard</a></>
+                      )}
+                      {formData.modelType.startsWith('claude') && (
+                        <>Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer" className="underline">Anthropic Console</a></>
+                      )}
+                      {formData.modelType.startsWith('gemini') && (
+                        <>Get your key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="underline">Google AI Studio</a></>
+                      )}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -541,10 +658,11 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
               <Input
                 id="totalPrize"
                 type="number"
-                step="0.01"
+                step="1"
+                min="0"
                 value={formData.totalPrize || ""}
-                onChange={(e) => updateFormData("totalPrize", parseFloat(e.target.value))}
-                placeholder="e.g., 1000"
+                onChange={(e) => updateFormData("totalPrize", parseInt(e.target.value) || 0)}
+                placeholder="e.g., 1000 (whole dollars only)"
                 required
               />
             </div>
@@ -573,10 +691,11 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                   <Input
                     id="firstPlacePrize"
                     type="number"
-                    step="0.01"
+                    step="1"
+                    min="0"
                     value={formData.firstPlacePrize || ""}
                     onChange={(e) =>
-                      updateFormData("firstPlacePrize", e.target.value ? parseFloat(e.target.value) : null)
+                      updateFormData("firstPlacePrize", e.target.value ? parseInt(e.target.value) : null)
                     }
                   />
                 </div>
@@ -585,10 +704,11 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                   <Input
                     id="secondPlacePrize"
                     type="number"
-                    step="0.01"
+                    step="1"
+                    min="0"
                     value={formData.secondPlacePrize || ""}
                     onChange={(e) =>
-                      updateFormData("secondPlacePrize", e.target.value ? parseFloat(e.target.value) : null)
+                      updateFormData("secondPlacePrize", e.target.value ? parseInt(e.target.value) : null)
                     }
                   />
                 </div>
@@ -597,10 +717,11 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                   <Input
                     id="thirdPlacePrize"
                     type="number"
-                    step="0.01"
+                    step="1"
+                    min="0"
                     value={formData.thirdPlacePrize || ""}
                     onChange={(e) =>
-                      updateFormData("thirdPlacePrize", e.target.value ? parseFloat(e.target.value) : null)
+                      updateFormData("thirdPlacePrize", e.target.value ? parseInt(e.target.value) : null)
                     }
                   />
                 </div>

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Navbar } from "@/components/navbar"
-import { UserProfile } from "@/components/user-profile"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Navbar } from "@/app/_components/navbar"
+import { UserProfile } from "./_components/user-profile"
 
 export default function ProfilePage() {
   const { user, loading } = useAuth()

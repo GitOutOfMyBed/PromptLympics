@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/prisma"
+import { getValidationData } from "@/firebase/firebaseadmin-storage"
+import { callLLM as callLLMWithVercelAI } from "@/lib/llm"
+import { decryptApiKey } from "@/lib/encryption"
 
 type Competition = {
   id: string
   modelType: string
   validationDataUrl: string
+  validationDataPath: string | null
   targetScore: number | null
   organizerId: string
+  encryptedApiKey: string | null
+  apiKeyProvider: string | null
 }
 
 type TestCase = {
@@ -25,18 +31,17 @@ export async function evaluatePrompt(
       data: { status: "EVALUATING" },
     })
 
-    // Load validation data from Firebase Storage URL
-    const validationResponse = await fetch(competition.validationDataUrl)
-    if (!validationResponse.ok) {
-      throw new Error(`Failed to fetch validation data: ${validationResponse.statusText}`)
-    }
-    const validationData = await validationResponse.json() as TestCase[]
+    // Load validation data from Firebase Storage using Admin SDK
+    // This bypasses security rules and fetches private validation data
+    const validationPath = competition.validationDataPath || competition.validationDataUrl
+    const validationData = await getValidationData(validationPath) as TestCase[]
 
     // Evaluate prompt against test cases
     const results = await evaluateTestCases(
       prompt,
       validationData,
-      competition.modelType
+      competition.modelType,
+      competition.encryptedApiKey
     )
 
     // Calculate score (accuracy)
@@ -94,7 +99,8 @@ export async function evaluatePrompt(
 async function evaluateTestCases(
   prompt: string,
   testCases: TestCase[],
-  modelType: string
+  modelType: string,
+  encryptedApiKey?: string | null
 ): Promise<{ correct: number; total: number; details: any[] }> {
   let correct = 0
   const details: any[] = []
@@ -102,7 +108,7 @@ async function evaluateTestCases(
   for (const testCase of testCases) {
     try {
       // Call the LLM with the prompt and test case input
-      const output = await callLLM(prompt, testCase.input, modelType)
+      const output = await callLLM(prompt, testCase.input, modelType, encryptedApiKey)
 
       // Compare output with expected output
       const isCorrect = compareOutputs(output, testCase.expectedOutput)
@@ -138,91 +144,32 @@ async function evaluateTestCases(
 async function callLLM(
   prompt: string,
   input: string,
-  modelType: string
+  modelName: string,
+  encryptedApiKey?: string | null
 ): Promise<string> {
   // Combine the prompt with the input
   const fullPrompt = `${prompt}\n\nInput: ${input}\n\nOutput:`
 
-  // Call the appropriate LLM based on modelType
-  if (modelType.startsWith("GPT")) {
-    return callOpenAI(fullPrompt, modelType)
-  } else if (modelType.startsWith("CLAUDE")) {
-    return callAnthropic(fullPrompt, modelType)
-  } else {
-    throw new Error(`Unsupported model type: ${modelType}`)
-  }
-}
-
-async function callOpenAI(prompt: string, modelType: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY
-
-  if (!apiKey) {
-    throw new Error("OpenAI API key not configured")
+  // Decrypt API key if provided
+  let apiKey: string | undefined
+  if (encryptedApiKey) {
+    try {
+      apiKey = await decryptApiKey(encryptedApiKey)
+    } catch (error) {
+      console.error("Failed to decrypt API key, falling back to environment variable:", error)
+      // Fall back to environment variable if decryption fails
+      apiKey = undefined
+    }
   }
 
-  const modelMap: Record<string, string> = {
-    GPT_4: "gpt-4",
-    GPT_3_5_TURBO: "gpt-3.5-turbo",
-  }
-
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelMap[modelType] || "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0,
-      max_tokens: 500,
-    }),
+  // Use the new Vercel AI SDK implementation with optional custom API key
+  return callLLMWithVercelAI({
+    model: modelName,
+    prompt: fullPrompt,
+    temperature: 0,
+    maxTokens: 500,
+    apiKey,  // Will use env var if undefined
   })
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.choices[0].message.content.trim()
-}
-
-async function callAnthropic(
-  prompt: string,
-  modelType: string
-): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-
-  if (!apiKey) {
-    throw new Error("Anthropic API key not configured")
-  }
-
-  const modelMap: Record<string, string> = {
-    CLAUDE_3_OPUS: "claude-3-opus-20240229",
-    CLAUDE_3_SONNET: "claude-3-sonnet-20240229",
-    CLAUDE_3_HAIKU: "claude-3-haiku-20240307",
-  }
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: modelMap[modelType] || "claude-3-haiku-20240307",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`Anthropic API error: ${response.statusText}`)
-  }
-
-  const data = await response.json()
-  return data.content[0].text.trim()
 }
 
 function compareOutputs(actual: string, expected: string): boolean {

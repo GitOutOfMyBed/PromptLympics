@@ -3,10 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { formatDate, formatCurrency } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/app/_components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card"
+import { Badge } from "@/app/_components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/_components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -14,9 +14,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/app/_components/ui/table"
 import { Trophy, Calendar, DollarSign, Target, Download, Code } from "lucide-react"
-import { User } from "firebase/auth"
+import type { User } from "firebase/auth"
 
 type CompetitionDetailsProps = {
   competition: any
@@ -129,7 +129,7 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
                 </div>
                 <div>
                   <h4 className="font-semibold mb-1">Model</h4>
-                  <p className="text-muted-foreground">{competition.modelType.replace(/_/g, " ")}</p>
+                  <p className="text-muted-foreground">{competition.modelType}</p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-1">Start Date</h4>

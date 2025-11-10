@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Navbar } from "@/components/navbar"
-import { SubmissionDetails } from "@/components/submission-details"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Navbar } from "@/app/_components/navbar"
+import { SubmissionDetails } from "./_components/submission-details"
 import { authenticatedFetch } from "@/lib/api-client"
 
 export default function SubmissionDetailPage({

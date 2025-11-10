@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { verifyAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { CompetitionStatus } from "@prisma/client"
+import { encryptApiKey, getProviderFromModel } from "@/lib/encryption"
 
 export async function GET(req: Request) {
   try {
@@ -58,6 +59,62 @@ export async function POST(req: Request) {
       )
     }
 
+    // Validate prize amounts
+    if (data.totalPrize < 0) {
+      return NextResponse.json(
+        { error: "Total prize cannot be negative" },
+        { status: 400 }
+      )
+    }
+
+    if (!Number.isInteger(data.totalPrize)) {
+      return NextResponse.json(
+        { error: "Total prize must be a whole dollar amount" },
+        { status: 400 }
+      )
+    }
+
+    if (data.firstPlacePrize && !Number.isInteger(data.firstPlacePrize)) {
+      return NextResponse.json(
+        { error: "Prize amounts must be whole dollar amounts" },
+        { status: 400 }
+      )
+    }
+
+    if (data.secondPlacePrize && !Number.isInteger(data.secondPlacePrize)) {
+      return NextResponse.json(
+        { error: "Prize amounts must be whole dollar amounts" },
+        { status: 400 }
+      )
+    }
+
+    if (data.thirdPlacePrize && !Number.isInteger(data.thirdPlacePrize)) {
+      return NextResponse.json(
+        { error: "Prize amounts must be whole dollar amounts" },
+        { status: 400 }
+      )
+    }
+
+    // Handle API key encryption if provided
+    let encryptedApiKey = null
+    let apiKeyProvider = null
+
+    if (data.useOrganizerKey && data.apiKey) {
+      try {
+        // Encrypt the API key
+        encryptedApiKey = await encryptApiKey(data.apiKey)
+
+        // Determine provider based on model
+        apiKeyProvider = getProviderFromModel(data.modelType)
+      } catch (error) {
+        console.error("Error encrypting API key:", error)
+        return NextResponse.json(
+          { error: "Failed to encrypt API key. Please check your encryption configuration." },
+          { status: 500 }
+        )
+      }
+    }
+
     // Create competition
     const competition = await prisma.competition.create({
       data: {
@@ -84,10 +141,14 @@ export async function POST(req: Request) {
         endDate: new Date(data.endDate),
         organizerId: auth.user.id,
         status: "ACTIVE",
+        encryptedApiKey,
+        apiKeyProvider,
       },
     })
 
-    return NextResponse.json(competition, { status: 201 })
+    // Don't return encrypted API key to client
+    const { encryptedApiKey: _, apiKeyProvider: __, ...safeCompetition } = competition
+    return NextResponse.json(safeCompetition, { status: 201 })
   } catch (error) {
     console.error("Error creating competition:", error)
     return NextResponse.json(

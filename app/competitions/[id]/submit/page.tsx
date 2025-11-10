@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Navbar } from "@/components/navbar"
-import { SubmissionForm } from "@/components/submission-form"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Navbar } from "@/app/_components/navbar"
+import { SubmissionForm } from "./_components/submission-form"
 
 export default function SubmitPage({
   params,

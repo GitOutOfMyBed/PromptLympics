@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { formatDate, formatCurrency } from "@/lib/utils"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/_components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -11,9 +11,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "@/app/_components/ui/table"
+import { Badge } from "@/app/_components/ui/badge"
+import { Button } from "@/app/_components/ui/button"
 import { Trophy, FileText, Plus } from "lucide-react"
 
 type UserProfileProps = {

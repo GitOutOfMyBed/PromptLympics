@@ -2,9 +2,9 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Navbar } from "@/components/navbar"
-import { CompetitionCreateForm } from "@/components/competition-create-form"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Navbar } from "@/app/_components/navbar"
+import { CompetitionCreateForm } from "./_components/competition-create-form"
 
 export default function CreateCompetitionPage() {
   const { user, loading } = useAuth()

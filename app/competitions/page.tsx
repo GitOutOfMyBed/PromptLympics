@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Navbar } from "@/components/navbar"
-import { CompetitionsTable } from "@/components/competitions-table"
-import { Button } from "@/components/ui/button"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Navbar } from "@/app/_components/navbar"
+import { CompetitionsTable } from "./_components/competitions-table"
+import { Button } from "@/app/_components/ui/button"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 

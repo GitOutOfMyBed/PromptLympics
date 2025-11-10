@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { formatDate } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "@/app/_components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card"
+import { Badge } from "@/app/_components/ui/badge"
 import { ArrowLeft, CheckCircle, XCircle, Loader2 } from "lucide-react"
 
 type SubmissionDetailsProps = {

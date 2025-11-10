@@ -3,8 +3,8 @@
 import Link from "next/link"
 import { signOut } from "firebase/auth"
 import { auth } from "@/firebase/firebasefrontend"
-import { useAuth } from "@/components/providers/auth-provider"
-import { Button } from "@/components/ui/button"
+import { useAuth } from "@/app/_components/providers/auth-provider"
+import { Button } from "@/app/_components/ui/button"
 import { Trophy } from "lucide-react"
 
 export function Navbar() {
