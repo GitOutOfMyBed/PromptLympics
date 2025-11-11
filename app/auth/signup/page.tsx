@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth"
-import { auth, googleProvider, githubProvider } from "@/firebase/firebasefrontend"
+import { auth, googleProvider } from "@/firebase/firebasefrontend"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/app/_components/ui/button"
@@ -47,11 +47,10 @@ export default function SignUpPage() {
     }
   }
 
-  const handleOAuthSignIn = async (provider: string) => {
+  const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
-      const authProvider = provider === "google" ? googleProvider : githubProvider
-      await signInWithPopup(auth, authProvider)
+      await signInWithPopup(auth, googleProvider)
       router.push("/competitions")
     } catch (err: any) {
       setError(err.message || "Sign in failed")
@@ -146,22 +145,14 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                variant="outline"
-                onClick={() => handleOAuthSignIn("google")}
-                disabled={loading}
-              >
-                Google
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => handleOAuthSignIn("github")}
-                disabled={loading}
-              >
-                GitHub
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full"
+            >
+              Google
+            </Button>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
               Already have an account?{" "}
