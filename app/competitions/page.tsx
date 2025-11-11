@@ -40,10 +40,10 @@ export default function CompetitionsPage() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Competitions</h1>
-          <p className="text-muted-foreground mt-2">
+      <div className="container mx-auto px-4 py-12">
+        <div className="mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Competitions</h1>
+          <p className="text-xl text-muted-foreground">
             Browse and participate in prompt engineering competitions
           </p>
         </div>

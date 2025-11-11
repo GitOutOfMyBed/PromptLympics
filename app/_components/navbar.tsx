@@ -15,39 +15,41 @@ export function Navbar() {
   }
 
   return (
-    <nav className="border-b">
+    <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-          <Trophy className="h-6 w-6" />
-          PromptLympics
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold hover-lift group">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center">
+            <Trophy className="h-6 w-6 text-white" />
+          </div>
+          <span className="gradient-text">PromptLympics</span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {user ? (
             <>
               <Link href="/competitions">
-                <Button variant="ghost">Competitions</Button>
+                <Button variant="ghost" className="font-medium">Competitions</Button>
               </Link>
               <Link href="/profile">
-                <Button variant="ghost">Profile</Button>
+                <Button variant="ghost" className="font-medium">Profile</Button>
               </Link>
               <Link href="/competitions/create">
-                <Button>
+                <Button className="font-medium hover-lift">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Competition
+                  Create
                 </Button>
               </Link>
-              <Button onClick={handleSignOut} variant="outline">
+              <Button onClick={handleSignOut} variant="outline" className="font-medium">
                 Sign Out
               </Button>
             </>
           ) : (
             <>
               <Link href="/auth/signin">
-                <Button variant="ghost">Sign In</Button>
+                <Button variant="ghost" className="font-medium">Sign In</Button>
               </Link>
               <Link href="/auth/signup">
-                <Button>Get Started</Button>
+                <Button className="font-medium hover-lift">Get Started</Button>
               </Link>
             </>
           )}
