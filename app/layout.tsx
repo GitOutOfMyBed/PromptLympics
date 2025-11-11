@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/app/_components/providers/auth-provider"
 import { Footer } from "@/app/_components/footer"
+import { AnimatedBackground } from "@/app/_components/animated-background"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -19,6 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} flex flex-col min-h-screen`}>
+        <AnimatedBackground />
         <AuthProvider>
           <div className="flex-1">{children}</div>
           <Footer />

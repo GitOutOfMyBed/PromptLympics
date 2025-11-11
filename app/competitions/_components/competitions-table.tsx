@@ -58,7 +58,7 @@ export function CompetitionsTable({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {competitions.map((competition) => (
         <Link key={competition.id} href={`/competitions/${competition.id}`}>
-          <Card className="card-hover h-full border-2">
+          <Card className="card-hover h-full border-2 bg-white/90 backdrop-blur-sm">
             <CardHeader className="space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <Badge variant={getStatusVariant(competition.status)} className="font-semibold">
@@ -92,7 +92,7 @@ export function CompetitionsTable({
                   <span className="text-muted-foreground">{formatDate(competition.endDate)}</span>
                 </div>
                 {competition.bestScore !== null && (
-                  <div className="flex items-center gap-1 text-sm font-semibold text-purple-600">
+                  <div className="flex items-center gap-1 text-sm font-semibold text-cyan-600">
                     <TrendingUp className="h-4 w-4" />
                     <span>{(competition.bestScore * 100).toFixed(1)}%</span>
                   </div>
