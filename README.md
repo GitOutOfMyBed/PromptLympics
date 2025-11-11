@@ -49,14 +49,14 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env` and add:
+Edit `.env.local` and add:
 - `DATABASE_URL`: Your PostgreSQL connection string
-- `NEXTAUTH_SECRET`: Generate with `openssl rand -base64 32`
-- `NEXTAUTH_URL`: Your app URL (e.g., `http://localhost:3000`)
-- `OPENAI_API_KEY`: Your OpenAI API key (optional)
-- `ANTHROPIC_API_KEY`: Your Anthropic API key (optional)
-- `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET`: For Google OAuth (optional)
-- `GITHUB_ID` & `GITHUB_SECRET`: For GitHub OAuth (optional)
+- `FIREBASE_SERVICE_ACCOUNT_KEY`: Your Firebase service account JSON (paste entire JSON as single-line string)
+  - Get from: Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+- `API_KEY_ENCRYPTION_SECRET`: Generate with `openssl rand -hex 32`
+- `OPENAI_API_KEY`: Your OpenAI API key (optional, for GPT models)
+- `ANTHROPIC_API_KEY`: Your Anthropic API key (optional, for Claude models)
+- `GOOGLE_GENERATIVE_AI_API_KEY`: Your Google AI API key (optional, for Gemini models)
 
 4. Set up the database:
 ```bash
@@ -78,12 +78,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 2. Import the project to Vercel
 
 3. Set up environment variables in Vercel:
-   - `DATABASE_URL`: Your production PostgreSQL URL (we recommend using Vercel Postgres or Supabase)
-   - `NEXTAUTH_SECRET`: Generate a new secret for production
-   - `NEXTAUTH_URL`: Your production URL
-   - `OPENAI_API_KEY`: Your OpenAI API key
-   - `ANTHROPIC_API_KEY`: Your Anthropic API key
-   - OAuth credentials (if using)
+   - `DATABASE_URL`: Your production PostgreSQL URL (we recommend using Neon or Supabase)
+   - `FIREBASE_SERVICE_ACCOUNT_KEY`: Paste your Firebase service account JSON as a single-line string
+   - `API_KEY_ENCRYPTION_SECRET`: Generate with `openssl rand -hex 32`
+   - `OPENAI_API_KEY`: Your OpenAI API key (optional)
+   - `ANTHROPIC_API_KEY`: Your Anthropic API key (optional)
+   - `GOOGLE_GENERATIVE_AI_API_KEY`: Your Google AI API key (optional)
 
 4. Deploy!
 

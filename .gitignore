@@ -29,7 +29,7 @@ yarn-error.log*
 .env*.local
 .env
 
-# Firebase service account keys (ignore all Firebase admin SDK JSON files)
+# Firebase service account keys (stored in .env files above)
 *firebase-adminsdk*.json
 
 # vercel
