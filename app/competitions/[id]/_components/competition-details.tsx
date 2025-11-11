@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/app/_components/ui/table"
-import { Trophy, Calendar, DollarSign, Target, Download, Code } from "lucide-react"
+import { Trophy, Calendar, DollarSign, Target, Download, Code, FileText } from "lucide-react"
 import type { User } from "firebase/auth"
 
 type CompetitionDetailsProps = {
@@ -26,6 +26,9 @@ type CompetitionDetailsProps = {
 export function CompetitionDetails({ competition, session }: CompetitionDetailsProps) {
   const isActive = competition.status === "ACTIVE"
   const isOrganizer = session?.user?.uid === competition.organizerId
+  const userSubmissionCount = competition.userSubmissionCount || 0
+  const submissionsRemaining = competition.maxSubmissionsPerUser - userSubmissionCount
+  const canSubmit = isActive && session && !isOrganizer && submissionsRemaining > 0
 
   const downloadTestCases = () => {
     // This would trigger a download of the training test cases
@@ -40,17 +43,36 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
           <h1 className="text-4xl font-bold">{competition.title}</h1>
         </div>
         {isActive && session && !isOrganizer && (
-          <Link href={`/competitions/${competition.id}/submit`}>
-            <Button size="lg">
-              <Code className="h-4 w-4 mr-2" />
-              Submit Prompt
-            </Button>
-          </Link>
+          <div className="flex flex-col items-end gap-2">
+            {canSubmit ? (
+              <>
+                <Link href={`/competitions/${competition.id}/submit`}>
+                  <Button size="lg">
+                    <Code className="h-4 w-4 mr-2" />
+                    Submit Prompt
+                  </Button>
+                </Link>
+                <p className="text-sm text-muted-foreground">
+                  {submissionsRemaining} submission{submissionsRemaining !== 1 ? 's' : ''} remaining
+                </p>
+              </>
+            ) : (
+              <>
+                <Button size="lg" disabled>
+                  <Code className="h-4 w-4 mr-2" />
+                  No Submissions Left
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  {userSubmissionCount}/{competition.maxSubmissionsPerUser} submissions used
+                </p>
+              </>
+            )}
+          </div>
         )}
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prize Pool</CardTitle>
@@ -97,6 +119,23 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
             <div className="text-2xl font-bold">{formatDate(competition.endDate)}</div>
           </CardContent>
         </Card>
+
+        {session && !isOrganizer && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Your Submissions</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {userSubmissionCount}/{competition.maxSubmissionsPerUser}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {submissionsRemaining} remaining
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Tabs */}

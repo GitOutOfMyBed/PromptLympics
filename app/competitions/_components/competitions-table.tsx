@@ -92,7 +92,7 @@ export function CompetitionsTable({
                   <span className="text-muted-foreground">{formatDate(competition.endDate)}</span>
                 </div>
                 {competition.bestScore !== null && (
-                  <div className="flex items-center gap-1 text-sm font-semibold text-cyan-600">
+                  <div className="flex items-center gap-1 text-sm font-semibold text-violet-600">
                     <TrendingUp className="h-4 w-4" />
                     <span>{(competition.bestScore * 100).toFixed(1)}%</span>
                   </div>

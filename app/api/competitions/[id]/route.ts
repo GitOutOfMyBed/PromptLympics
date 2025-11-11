@@ -7,6 +7,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const auth = await verifyAuth(req);
+
     const competition = await prisma.competition.findUnique({
       where: { id: params.id },
       include: {
@@ -41,7 +43,21 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(competition);
+    // If user is authenticated, get their submission count for this competition
+    let userSubmissionCount = 0;
+    if (auth?.user) {
+      userSubmissionCount = await prisma.submission.count({
+        where: {
+          competitionId: params.id,
+          userId: auth.user.id,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      ...competition,
+      userSubmissionCount,
+    });
   } catch (error) {
     console.error("Error fetching competition:", error);
     return NextResponse.json(

@@ -10,24 +10,24 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 185 84% 48%;
+    --primary: 262 80% 60%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 185 84% 48%;
+    --accent: 262 80% 60%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 185 84% 48%;
+    --ring: 262 80% 60%;
     --radius: 0.75rem;
 
     /* Modern gradient colors */
-    --gradient-from: 185 84% 48%;
-    --gradient-to: 203 89% 53%;
+    --gradient-from: 262 80% 60%;
+    --gradient-to: 238 75% 65%;
   }
 
   .dark {
@@ -79,7 +79,7 @@
   }
 
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-600 to-blue-600;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600;
   }
 
   /* Glass morphism */
