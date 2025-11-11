@@ -29,7 +29,7 @@ describe('LLM Module', () => {
       ;(generateText as jest.Mock).mockResolvedValue({ text: mockText })
 
       const result = await callLLM({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         prompt: 'Test prompt',
         temperature: 0.5,
       })
@@ -37,7 +37,7 @@ describe('LLM Module', () => {
       expect(generateText).toHaveBeenCalledWith({
         model: expect.objectContaining({
           provider: 'openai',
-          model: 'gpt-4o-mini',
+          model: 'gpt-5-mini',
         }),
         prompt: 'Test prompt',
         temperature: 0.5,
@@ -50,14 +50,14 @@ describe('LLM Module', () => {
       ;(generateText as jest.Mock).mockResolvedValue({ text: mockText })
 
       const result = await callLLM({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4.5',
         prompt: 'Another test',
       })
 
       expect(generateText).toHaveBeenCalledWith({
         model: expect.objectContaining({
           provider: 'anthropic',
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4.5',
         }),
         prompt: 'Another test',
         temperature: 0,
@@ -80,7 +80,7 @@ describe('LLM Module', () => {
 
       await expect(
         callLLM({
-          model: 'gpt-4o',
+          model: 'gpt-5',
           prompt: 'Test',
         })
       ).rejects.toThrow(`LLM API error: ${errorMessage}`)
@@ -88,16 +88,16 @@ describe('LLM Module', () => {
   })
 
   describe('estimateCost', () => {
-    it('should calculate cost correctly for GPT-4o-mini', () => {
-      const cost = estimateCost('gpt-4o-mini', 1000, 500)
+    it('should calculate cost correctly for GPT-5-mini', () => {
+      const cost = estimateCost('gpt-5-mini', 1000, 500)
       // Input: (1000 / 1,000,000) * 0.15 = 0.00015
       // Output: (500 / 1,000,000) * 0.6 = 0.0003
       // Total: 0.00045
       expect(cost).toBeCloseTo(0.00045, 6)
     })
 
-    it('should calculate cost correctly for Claude 3.5 Sonnet', () => {
-      const cost = estimateCost('claude-3-5-sonnet-20241022', 2000, 1000)
+    it('should calculate cost correctly for Claude Sonnet 4.5', () => {
+      const cost = estimateCost('claude-sonnet-4.5', 2000, 1000)
       // Input: (2000 / 1,000,000) * 3 = 0.006
       // Output: (1000 / 1,000,000) * 15 = 0.015
       // Total: 0.021
@@ -136,14 +136,14 @@ describe('LLM Module', () => {
 
   describe('isModelSupported', () => {
     it('should return true for supported models', () => {
-      expect(isModelSupported('gpt-4o')).toBe(true)
-      expect(isModelSupported('gpt-4o-mini')).toBe(true)
-      expect(isModelSupported('claude-3-5-sonnet-20241022')).toBe(true)
-      expect(isModelSupported('gemini-1.5-pro')).toBe(true)
+      expect(isModelSupported('gpt-5')).toBe(true)
+      expect(isModelSupported('gpt-5-mini')).toBe(true)
+      expect(isModelSupported('claude-sonnet-4.5')).toBe(true)
+      expect(isModelSupported('gemini-2.5-flash')).toBe(true)
     })
 
     it('should return false for unsupported models', () => {
-      expect(isModelSupported('gpt-5')).toBe(false)
+      expect(isModelSupported('gpt-4o')).toBe(false)
       expect(isModelSupported('random-model')).toBe(false)
       expect(isModelSupported('')).toBe(false)
     })

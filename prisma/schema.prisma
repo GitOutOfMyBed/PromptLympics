@@ -88,8 +88,8 @@ model Competition {
   modelType          String
 
   // API Key configuration (encrypted)
-  encryptedApiKey    String?
-  apiKeyProvider     String?           // "openai", "anthropic", or "google"
+  encryptedApiKey    String
+  apiKeyProvider     String            // "openai", "anthropic", or "google"
 
   organizer          User              @relation(fields: [organizerId], references: [id])
   submissions        Submission[]

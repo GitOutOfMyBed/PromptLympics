@@ -65,7 +65,7 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
   ...getInitialDates(),
   trainingFile: null,
   validationFile: null,
-  useOrganizerKey: false,
+  useOrganizerKey: true,
   apiKey: "",
 };
 
@@ -199,30 +199,28 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
     }
 
     // API key validation
-    if (formData.useOrganizerKey) {
-      if (!formData.apiKey) {
-        return "API key is required when using your own key";
-      }
+    if (!formData.apiKey) {
+      return "API key is required";
+    }
 
-      // Validate API key format
-      if (
-        formData.modelType.startsWith("gpt") &&
-        !formData.apiKey.startsWith("sk-")
-      ) {
-        return "Invalid OpenAI API key format (should start with 'sk-')";
-      }
-      if (
-        formData.modelType.startsWith("claude") &&
-        !formData.apiKey.startsWith("sk-ant-")
-      ) {
-        return "Invalid Anthropic API key format (should start with 'sk-ant-')";
-      }
-      if (
-        formData.modelType.startsWith("gemini") &&
-        !formData.apiKey.startsWith("AIza")
-      ) {
-        return "Invalid Google AI API key format (should start with 'AIza')";
-      }
+    // Validate API key format
+    if (
+      formData.modelType.startsWith("gpt") &&
+      !formData.apiKey.startsWith("sk-")
+    ) {
+      return "Invalid OpenAI API key format (should start with 'sk-')";
+    }
+    if (
+      formData.modelType.startsWith("claude") &&
+      !formData.apiKey.startsWith("sk-ant-")
+    ) {
+      return "Invalid Anthropic API key format (should start with 'sk-ant-')";
+    }
+    if (
+      formData.modelType.startsWith("gemini") &&
+      !formData.apiKey.startsWith("AIza")
+    ) {
+      return "Invalid Google AI API key format (should start with 'AIza')";
     }
 
     return null;
@@ -622,7 +620,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                       }
                       value={formData.apiKey}
                       onChange={(e) => updateFormData("apiKey", e.target.value)}
-                      required={formData.useOrganizerKey}
+                      required
                       className="font-mono"
                     />
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

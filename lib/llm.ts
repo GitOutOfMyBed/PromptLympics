@@ -4,16 +4,16 @@
  * Handles model selection, API keys, and cost estimation.
  */
 
-import { generateText } from 'ai'
-import { openai, createOpenAI } from '@ai-sdk/openai'
-import { anthropic, createAnthropic } from '@ai-sdk/anthropic'
-import { google, createGoogleGenerativeAI } from '@ai-sdk/google'
+import { generateText } from "ai";
+import { openai, createOpenAI } from "@ai-sdk/openai";
+import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
+import { google, createGoogleGenerativeAI } from "@ai-sdk/google";
 
 export interface LLMCallOptions {
-  model: string
-  prompt: string
-  temperature?: number
-  apiKey?: string  // Optional custom API key
+  model: string;
+  prompt: string;
+  temperature?: number;
+  apiKey?: string; // Optional custom API key
 }
 
 /**
@@ -21,58 +21,54 @@ export interface LLMCallOptions {
  */
 export const SUPPORTED_MODELS = {
   // OpenAI Models
-  'gpt-4o': {
-    provider: 'openai',
-    displayName: 'GPT-4o (Latest)',
+  "gpt-5": {
+    provider: "openai",
+    displayName: "gpt-5",
     costPerMillion: { input: 2.5, output: 10 },
   },
-  'gpt-4o-mini': {
-    provider: 'openai',
-    displayName: 'GPT-4o Mini (Cheapest)',
+  "gpt-5-mini": {
+    provider: "openai",
+    displayName: "gpt-5-mini",
     costPerMillion: { input: 0.15, output: 0.6 },
   },
-  'gpt-4-turbo': {
-    provider: 'openai',
-    displayName: 'GPT-4 Turbo',
-    costPerMillion: { input: 10, output: 30 },
-  },
-  'gpt-3.5-turbo': {
-    provider: 'openai',
-    displayName: 'GPT-3.5 Turbo (Legacy)',
+  "gpt-5-codex": {
+    provider: "openai",
+    displayName: "gpt-5-codex",
     costPerMillion: { input: 0.5, output: 1.5 },
   },
 
   // Anthropic Models
-  'claude-3-5-sonnet-20241022': {
-    provider: 'anthropic',
-    displayName: 'Claude 3.5 Sonnet (Best)',
+  "claude-sonnet-4.5": {
+    provider: "anthropic",
+    displayName: "claude-sonnet-4.5",
     costPerMillion: { input: 3, output: 15 },
   },
-  'claude-3-5-haiku-20241022': {
-    provider: 'anthropic',
-    displayName: 'Claude 3.5 Haiku (Fast)',
+  "claude-haiku-4.5": {
+    provider: "anthropic",
+    displayName: "claude-haiku-4.5",
     costPerMillion: { input: 1, output: 5 },
-  },
-  'claude-3-opus-20240229': {
-    provider: 'anthropic',
-    displayName: 'Claude 3 Opus (Powerful)',
-    costPerMillion: { input: 15, output: 75 },
   },
 
   // Google Models
-  'gemini-1.5-pro': {
-    provider: 'google',
-    displayName: 'Gemini 1.5 Pro',
+  "gemini-2.5-pro": {
+    provider: "google",
+    displayName: "gemini-2.5-pro",
+    costPerMillion: { input: 1.25, output: 10 },
+  },
+
+  "gemini-2.5-flash": {
+    provider: "google",
+    displayName: "gemini-2.5-flash",
     costPerMillion: { input: 1.25, output: 5 },
   },
-  'gemini-1.5-flash': {
-    provider: 'google',
-    displayName: 'Gemini 1.5 Flash',
+  "gemini-1.5-flash-latest": {
+    provider: "google",
+    displayName: "gemini-2.5-flash-lite",
     costPerMillion: { input: 0.075, output: 0.3 },
   },
-} as const
+} as const;
 
-export type SupportedModel = keyof typeof SUPPORTED_MODELS
+export type SupportedModel = keyof typeof SUPPORTED_MODELS;
 
 /**
  * Get the appropriate AI SDK model instance for the given model name
@@ -80,39 +76,43 @@ export type SupportedModel = keyof typeof SUPPORTED_MODELS
  * @param apiKey - Optional custom API key to use instead of environment variable
  */
 function getModel(modelName: string, apiKey?: string) {
-  const modelConfig = SUPPORTED_MODELS[modelName as SupportedModel]
+  const modelConfig = SUPPORTED_MODELS[modelName as SupportedModel];
 
   if (!modelConfig) {
-    throw new Error(`Unsupported model: ${modelName}. Supported models: ${Object.keys(SUPPORTED_MODELS).join(', ')}`)
+    throw new Error(
+      `Unsupported model: ${modelName}. Supported models: ${Object.keys(
+        SUPPORTED_MODELS
+      ).join(", ")}`
+    );
   }
 
   switch (modelConfig.provider) {
-    case 'openai':
+    case "openai":
       // Use custom API key if provided, otherwise use default from env
       if (apiKey) {
-        const customOpenAI = createOpenAI({ apiKey })
-        return customOpenAI(modelName)
+        const customOpenAI = createOpenAI({ apiKey });
+        return customOpenAI(modelName);
       }
-      return openai(modelName)
+      return openai(modelName);
 
-    case 'anthropic':
+    case "anthropic":
       // Use custom API key if provided, otherwise use default from env
       if (apiKey) {
-        const customAnthropic = createAnthropic({ apiKey })
-        return customAnthropic(modelName)
+        const customAnthropic = createAnthropic({ apiKey });
+        return customAnthropic(modelName);
       }
-      return anthropic(modelName)
+      return anthropic(modelName);
 
-    case 'google':
+    case "google":
       // Use custom API key if provided, otherwise use default from env
       if (apiKey) {
-        const customGoogle = createGoogleGenerativeAI({ apiKey })
-        return customGoogle(modelName)
+        const customGoogle = createGoogleGenerativeAI({ apiKey });
+        return customGoogle(modelName);
       }
-      return google(modelName)
+      return google(modelName);
 
     default:
-      throw new Error(`Unknown provider for model: ${modelName}`)
+      throw new Error(`Unknown provider for model: ${modelName}`);
   }
 }
 
@@ -124,20 +124,24 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
     model,
     prompt,
     temperature = 0,
-    apiKey,  // Extract custom API key if provided
-  } = options
+    apiKey, // Extract custom API key if provided
+  } = options;
 
   try {
     const { text } = await generateText({
-      model: getModel(model, apiKey),  // Pass API key to getModel
+      model: getModel(model, apiKey), // Pass API key to getModel
       prompt,
       temperature,
-    })
+    });
 
-    return text.trim()
+    return text.trim();
   } catch (error) {
-    console.error(`LLM call failed for model ${model}:`, error)
-    throw new Error(`LLM API error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    console.error(`LLM call failed for model ${model}:`, error);
+    throw new Error(
+      `LLM API error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
   }
 }
 
@@ -153,17 +157,19 @@ export function estimateCost(
   inputTokens: number,
   outputTokens: number
 ): number {
-  const modelConfig = SUPPORTED_MODELS[model as SupportedModel]
+  const modelConfig = SUPPORTED_MODELS[model as SupportedModel];
 
   if (!modelConfig) {
-    console.warn(`Unknown model for cost estimation: ${model}`)
-    return 0
+    console.warn(`Unknown model for cost estimation: ${model}`);
+    return 0;
   }
 
-  const inputCost = (inputTokens / 1_000_000) * modelConfig.costPerMillion.input
-  const outputCost = (outputTokens / 1_000_000) * modelConfig.costPerMillion.output
+  const inputCost =
+    (inputTokens / 1_000_000) * modelConfig.costPerMillion.input;
+  const outputCost =
+    (outputTokens / 1_000_000) * modelConfig.costPerMillion.output;
 
-  return inputCost + outputCost
+  return inputCost + outputCost;
 }
 
 /**
@@ -175,12 +181,12 @@ export function getSupportedModelsList() {
     label: config.displayName,
     provider: config.provider,
     estimatedCost: estimateCost(value, 1000, 500), // Example: 1000 input, 500 output tokens
-  }))
+  }));
 }
 
 /**
  * Validate if a model is supported
  */
 export function isModelSupported(model: string): model is SupportedModel {
-  return model in SUPPORTED_MODELS
+  return model in SUPPORTED_MODELS;
 }
