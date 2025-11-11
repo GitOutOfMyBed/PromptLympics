@@ -144,6 +144,9 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
           <TabsTrigger value="data">Data & Test Cases</TabsTrigger>
+          {session && !isOrganizer && (
+            <TabsTrigger value="my-submissions">My Submissions</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -315,6 +318,72 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
             </CardContent>
           </Card>
         </TabsContent>
+
+        {session && !isOrganizer && (
+          <TabsContent value="my-submissions">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Submissions</CardTitle>
+                <CardDescription>
+                  View all your submissions and their scores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Submitted</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Score</TableHead>
+                      <TableHead>Prompt Preview</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {!competition.userSubmissions || competition.userSubmissions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          You haven&apos;t made any submissions yet.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      competition.userSubmissions.map((submission: any) => (
+                        <TableRow key={submission.id}>
+                          <TableCell>{formatDate(submission.submittedAt)}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              submission.status === 'COMPLETED' ? 'default' :
+                              submission.status === 'FAILED' ? 'destructive' :
+                              'secondary'
+                            }>
+                              {submission.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {submission.score !== null
+                              ? `${(submission.score * 100).toFixed(1)}%`
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="max-w-md truncate">
+                            {submission.prompt.substring(0, 100)}
+                            {submission.prompt.length > 100 ? '...' : ''}
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/competitions/${competition.id}/submissions/${submission.id}`}>
+                              <Button variant="ghost" size="sm">
+                                View Details
+                              </Button>
+                            </Link>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

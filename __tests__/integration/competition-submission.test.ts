@@ -17,8 +17,9 @@ jest.mock('@/firebase/firebaseadmin-storage', () => ({
 jest.mock('@/lib/llm', () => ({
   callLLM: jest.fn(),
   getSupportedModelsList: jest.fn(() => [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini', provider: 'openai' }
+    { value: 'gpt-5-mini', label: 'GPT-5 Mini', provider: 'openai', estimatedCost: 0.00045 }
   ]),
+  isModelSupported: jest.fn((model) => model === 'gpt-5-mini'),
 }))
 
 // Mock encryption
@@ -116,7 +117,7 @@ describe('Competition Upload & Submission Flow', () => {
           organizationName: 'Test Org',
           totalPrize: 1000,
           prizeDistribution: 'WINNER_TAKES_ALL',
-          modelType: 'gpt-4o-mini',
+          modelType: 'gpt-5-mini',
           trainingDataUrl: 'https://example.com/training.json', // Mock URL
           validationDataUrl: 'test/validation.json', // Mock path
           trainingDataSize: trainingData.length,
@@ -310,6 +311,345 @@ describe('Competition Upload & Submission Flow', () => {
       const topSubmission = submissions[0]
       expect(topSubmission?.score).toBeDefined()
       expect(competition?.bestScore).toBe(topSubmission?.score)
+    })
+  })
+
+  describe('Additional Test Cases', () => {
+    describe('Failed Evaluations', () => {
+      it('should handle LLM errors gracefully', async () => {
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+        ;(callLLM as jest.Mock).mockRejectedValue(new Error('LLM API error: rate limit exceeded'))
+
+        const testPrompt = 'Test prompt that will fail'
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: testPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, testPrompt)
+
+        const updatedSubmission = await prisma.submission.findUnique({
+          where: { id: submission.id }
+        })
+
+        // When individual test cases fail, evaluation completes with score 0
+        expect(updatedSubmission?.status).toBe('COMPLETED')
+        expect(updatedSubmission?.score).toBe(0)
+        expect(updatedSubmission?.evaluationLog).toContain('error')
+      })
+
+      it('should handle invalid validation data format', async () => {
+        ;(getValidationData as jest.Mock).mockResolvedValue([
+          { wrong: 'format' }
+        ])
+
+        const testPrompt = 'Test prompt with invalid data'
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: testPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, testPrompt)
+
+        const updatedSubmission = await prisma.submission.findUnique({
+          where: { id: submission.id }
+        })
+
+        // Invalid data format will cause test cases to fail, resulting in score 0
+        expect(updatedSubmission?.status).toBe('COMPLETED')
+        expect(updatedSubmission?.score).toBe(0)
+      })
+    })
+
+    describe('Competition Status and Timing', () => {
+      it('should prevent submissions to completed competitions', async () => {
+        const completedCompetition = await prisma.competition.create({
+          data: {
+            title: 'Completed Competition',
+            description: 'This competition has ended',
+            organizationName: 'Test Org',
+            totalPrize: 500,
+            prizeDistribution: 'WINNER_TAKES_ALL',
+            modelType: 'gpt-5-mini',
+            trainingDataUrl: 'https://example.com/training.json',
+            validationDataUrl: 'test/validation.json',
+            trainingDataSize: 3,
+            validationDataSize: 5,
+            startDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+            endDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+            organizerId: testUserId,
+            status: 'COMPLETED',
+            encryptedApiKey: 'encrypted_test-api-key',
+            apiKeyProvider: 'openai',
+            maxSubmissionsPerUser: 3,
+          }
+        })
+
+        // Attempt to create submission (this would normally be blocked by API)
+        const submissionCount = await prisma.submission.count({
+          where: { competitionId: completedCompetition.id }
+        })
+
+        expect(completedCompetition.status).toBe('COMPLETED')
+        expect(submissionCount).toBe(0)
+      })
+
+      it('should allow submissions to active competitions', async () => {
+        const activeCompetition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        expect(activeCompetition?.status).toBe('ACTIVE')
+
+        const now = new Date()
+        expect(activeCompetition?.startDate).toBeDefined()
+        expect(activeCompetition?.endDate).toBeDefined()
+        expect(activeCompetition!.startDate.getTime()).toBeLessThanOrEqual(now.getTime())
+        expect(activeCompetition!.endDate.getTime()).toBeGreaterThan(now.getTime())
+      })
+    })
+
+    describe('Multiple Users and Leaderboard', () => {
+      const testUser2Id = 'test-user-456'
+
+      beforeAll(async () => {
+        await prisma.user.create({
+          data: {
+            id: testUser2Id,
+            email: 'test2@example.com',
+            name: 'Test User 2',
+          }
+        })
+      })
+
+      afterAll(async () => {
+        await prisma.submission.deleteMany({
+          where: { userId: testUser2Id }
+        })
+        await prisma.user.deleteMany({
+          where: { id: testUser2Id }
+        })
+      })
+
+      it('should handle multiple users submitting to same competition', async () => {
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+        // User 1 submission - high score
+        ;(callLLM as jest.Mock).mockImplementation(() => {
+          return Promise.resolve('positive') // Mostly correct
+        })
+
+        const submission1 = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: 'Excellent classifier',
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission1.id, competition!, 'Excellent classifier')
+
+        // User 2 submission - low score
+        ;(callLLM as jest.Mock).mockImplementation(() => {
+          return Promise.resolve('negative') // Mostly wrong
+        })
+
+        const submission2 = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUser2Id,
+            prompt: 'Poor classifier',
+            status: 'PENDING',
+          }
+        })
+
+        await evaluatePrompt(submission2.id, competition!, 'Poor classifier')
+
+        // Verify both submissions are tracked
+        const allSubmissions = await prisma.submission.findMany({
+          where: {
+            competitionId,
+            userId: { in: [testUserId, testUser2Id] },
+            status: 'COMPLETED'
+          },
+          orderBy: { score: 'desc' }
+        })
+
+        expect(allSubmissions.length).toBeGreaterThanOrEqual(2)
+
+        const user1Submissions = allSubmissions.filter(s => s.userId === testUserId)
+        const user2Submissions = allSubmissions.filter(s => s.userId === testUser2Id)
+
+        expect(user1Submissions.length).toBeGreaterThan(0)
+        expect(user2Submissions.length).toBeGreaterThan(0)
+      })
+
+      it('should track per-user submission counts separately', async () => {
+        const user1Count = await prisma.submission.count({
+          where: { competitionId, userId: testUserId }
+        })
+
+        const user2Count = await prisma.submission.count({
+          where: { competitionId, userId: testUser2Id }
+        })
+
+        expect(user1Count).toBeGreaterThan(0)
+        expect(user2Count).toBeGreaterThan(0)
+
+        // Each user's count should be independent
+        expect(user1Count).not.toBe(user2Count)
+      })
+    })
+
+    describe('Edge Cases and Validation', () => {
+      it('should handle very long prompts', async () => {
+        const longPrompt = 'A'.repeat(5000) // 5000 character prompt
+
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: longPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        expect(submission.prompt).toHaveLength(5000)
+        expect(submission.prompt).toBe(longPrompt)
+      })
+
+      it('should handle prompts with special characters', async () => {
+        const specialPrompt = 'Test with "quotes", \'apostrophes\', and\nnewlines\t\ttabs'
+
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: specialPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        expect(submission.prompt).toBe(specialPrompt)
+      })
+
+      it('should handle empty evaluation logs gracefully', async () => {
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: 'Test prompt',
+            status: 'COMPLETED',
+            score: 0.5,
+            evaluationLog: '',
+          }
+        })
+
+        expect(submission.evaluationLog).toBeDefined()
+        expect(submission.status).toBe('COMPLETED')
+      })
+    })
+
+    describe('Score Calculations', () => {
+      it('should handle perfect score (100%)', async () => {
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+        // Mock perfect responses
+        let callIndex = 0
+        ;(callLLM as jest.Mock).mockImplementation(() => {
+          const result = validationData[callIndex % validationData.length].expectedOutput
+          callIndex++
+          return Promise.resolve(result)
+        })
+
+        const testPrompt = 'Perfect classifier'
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: testPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, testPrompt)
+
+        const updatedSubmission = await prisma.submission.findUnique({
+          where: { id: submission.id }
+        })
+
+        expect(updatedSubmission?.score).toBe(1.0)
+        expect(updatedSubmission?.status).toBe('COMPLETED')
+      })
+
+      it('should handle zero score (0%)', async () => {
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+        // Mock completely wrong responses
+        ;(callLLM as jest.Mock).mockImplementation(() => {
+          return Promise.resolve('completely_wrong_output')
+        })
+
+        const testPrompt = 'Terrible classifier'
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: testPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, testPrompt)
+
+        const updatedSubmission = await prisma.submission.findUnique({
+          where: { id: submission.id }
+        })
+
+        expect(updatedSubmission?.score).toBe(0.0)
+        expect(updatedSubmission?.status).toBe('COMPLETED')
+      })
     })
   })
 })

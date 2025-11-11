@@ -67,6 +67,8 @@ export async function POST(req: Request) {
     }
 
     // Create submission
+    console.log('[Submissions API] Creating submission for user:', auth.user.id, 'competition:', competitionId);
+
     const submission = await prisma.submission.create({
       data: {
         competitionId,
@@ -75,6 +77,8 @@ export async function POST(req: Request) {
         status: "PENDING",
       },
     });
+
+    console.log('[Submissions API] Created submission:', submission.id);
 
     // Evaluate in background (in production, this should be a queue job)
     evaluatePrompt(submission.id, competition, prompt).catch(console.error);

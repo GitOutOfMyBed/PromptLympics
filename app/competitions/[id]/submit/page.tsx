@@ -26,7 +26,19 @@ export default function SubmitPage({
   useEffect(() => {
     async function fetchCompetition() {
       try {
-        const response = await fetch(`/api/competitions/${params.id}`)
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        }
+
+        // Add auth token if user is logged in
+        if (user) {
+          const token = await user.getIdToken()
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
+        const response = await fetch(`/api/competitions/${params.id}`, {
+          headers,
+        })
         if (response.ok) {
           const data = await response.json()
           setCompetition(data)
@@ -41,7 +53,7 @@ export default function SubmitPage({
     }
 
     fetchCompetition()
-  }, [params.id])
+  }, [params.id, user])
 
   if (loading || loadingData) {
     return (

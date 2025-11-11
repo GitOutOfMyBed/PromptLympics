@@ -43,20 +43,46 @@ export async function GET(
       );
     }
 
-    // If user is authenticated, get their submission count for this competition
+    // If user is authenticated, get their submission count and submissions for this competition
     let userSubmissionCount = 0;
+    let userSubmissions: any[] = [];
     if (auth?.user) {
+      console.log('[Competition API] Fetching submissions for user:', auth.user.id, 'competition:', params.id);
+
       userSubmissionCount = await prisma.submission.count({
         where: {
           competitionId: params.id,
           userId: auth.user.id,
         },
       });
+
+      userSubmissions = await prisma.submission.findMany({
+        where: {
+          competitionId: params.id,
+          userId: auth.user.id,
+        },
+        orderBy: {
+          submittedAt: "desc",
+        },
+        select: {
+          id: true,
+          prompt: true,
+          score: true,
+          status: true,
+          submittedAt: true,
+          evaluatedAt: true,
+        },
+      });
+
+      console.log('[Competition API] Found submissions:', userSubmissionCount, 'submissions:', userSubmissions.length);
+    } else {
+      console.log('[Competition API] No authenticated user found');
     }
 
     return NextResponse.json({
       ...competition,
       userSubmissionCount,
+      userSubmissions,
     });
   } catch (error) {
     console.error("Error fetching competition:", error);
