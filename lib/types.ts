@@ -28,7 +28,7 @@ export type CompetitionFormData = {
   modelType: string
   characterLimit: number | null
   tokenLimit: number | null
-  examplePrompt: string
+  starterPrompt: string
   totalPrize: number
   prizeDistribution: string
   firstPlacePrize: number | null

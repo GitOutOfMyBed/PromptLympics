@@ -69,7 +69,7 @@ model Competition {
   minimumScore              Float?
   targetScore               Float?
   maxSubmissionsPerUser     Int               @default(3)  // Maximum number of submissions per participant
-  examplePrompt             String?
+  starterPrompt             String?
   characterLimit            Int?
   tokenLimit                Int?
   customModelUrl     String?

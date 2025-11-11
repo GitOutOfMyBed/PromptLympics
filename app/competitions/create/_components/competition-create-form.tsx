@@ -41,8 +41,8 @@ const getInitialDates = () => {
   oneWeekLater.setDate(today.getDate() + 7);
 
   return {
-    startDate: today.toISOString().split('T')[0],
-    endDate: oneWeekLater.toISOString().split('T')[0],
+    startDate: today.toISOString().slice(0, 16),
+    endDate: oneWeekLater.toISOString().slice(0, 16),
   };
 };
 
@@ -50,10 +50,10 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
   title: "",
   description: "",
   organizationName: "",
-  modelType: "gpt-4o-mini",
+  modelType: "gpt-5-mini",
   characterLimit: null,
   tokenLimit: null,
-  examplePrompt: "",
+  starterPrompt: "",
   totalPrize: 0,
   prizeDistribution: "WINNER_TAKES_ALL",
   firstPlacePrize: null,
@@ -437,15 +437,39 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date*</Label>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  value={formData.startDate}
+                  onChange={(e) => updateFormData("startDate", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date*</Label>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  value={formData.endDate}
+                  onChange={(e) => updateFormData("endDate", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="examplePrompt">Example Prompt (Optional)</Label>
+              <Label htmlFor="starterPrompt">Starter Prompt (Optional)</Label>
               <Textarea
-                id="examplePrompt"
-                value={formData.examplePrompt}
+                id="starterPrompt"
+                value={formData.starterPrompt}
                 onChange={(e) =>
-                  updateFormData("examplePrompt", e.target.value)
+                  updateFormData("starterPrompt", e.target.value)
                 }
-                placeholder="Provide an example prompt to guide participants..."
+                placeholder="Provide the current best prompt to help guide participants..."
                 rows={4}
               />
             </div>
@@ -836,30 +860,6 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
               </div>
             </div>
             */}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date*</Label>
-                <Input
-                  id="startDate"
-                  type="datetime-local"
-                  value={formData.startDate}
-                  onChange={(e) => updateFormData("startDate", e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date*</Label>
-                <Input
-                  id="endDate"
-                  type="datetime-local"
-                  value={formData.endDate}
-                  onChange={(e) => updateFormData("endDate", e.target.value)}
-                  required
-                />
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}
@@ -870,14 +870,16 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
           <CardHeader>
             <CardTitle>Prize Distribution</CardTitle>
             <CardDescription>
-              Coming Soon - Prize money feature will be available in a future update
+              Coming Soon - Prize money feature will be available in a future
+              update
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
               <AlertDescription>
-                Prize money functionality is currently under development. For now, all competitions are set with $0 prize pool.
-                This feature will be enabled in an upcoming release.
+                Prize money functionality is currently under development. For
+                now, all competitions are set with $0 prize pool. This feature
+                will be enabled in an upcoming release.
               </AlertDescription>
             </Alert>
 
@@ -978,6 +980,12 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
             <div className="space-y-4 pt-4 border-t">
               <h3 className="text-lg font-semibold">Competition Rules</h3>
 
+              <Alert>
+                <AlertDescription>
+                  <strong>Scoring Methodology (Coming Soon):</strong> Currently, submissions are scored using <strong>exact string matching</strong> with <strong>accuracy</strong> as the primary metric. Each response is compared to the expected output, and the score is calculated as the percentage of correct matches. Future updates will allow you to customize the scoring method (e.g., semantic similarity, custom evaluation functions, LLM-as-judge).
+                </AlertDescription>
+              </Alert>
+
               <div className="space-y-2">
                 <Label htmlFor="maxSubmissionsPerUser">
                   Max Submissions Per Participant*
@@ -988,13 +996,14 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
                   min="1"
                   value={formData.maxSubmissionsPerUser}
                   onChange={(e) => {
-                    const value = parseInt(e.target.value) || 3
-                    updateFormData("maxSubmissionsPerUser", value)
+                    const value = parseInt(e.target.value) || 3;
+                    updateFormData("maxSubmissionsPerUser", value);
                   }}
                   required
                 />
                 <p className="text-sm text-muted-foreground">
-                  Maximum number of times each participant can submit (must be at least 1).
+                  Maximum number of times each participant can submit (must be
+                  at least 1).
                 </p>
               </div>
 

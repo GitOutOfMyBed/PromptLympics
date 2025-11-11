@@ -148,7 +148,7 @@ export async function POST(req: Request) {
         prizeDistribution: data.prizeDistribution,
         minimumScore: data.minimumScore,
         targetScore: data.targetScore,
-        examplePrompt: data.examplePrompt,
+        starterPrompt: data.starterPrompt,
         characterLimit: data.characterLimit,
         tokenLimit: data.tokenLimit,
         modelType: data.modelType,

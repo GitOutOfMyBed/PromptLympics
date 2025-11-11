@@ -206,14 +206,14 @@ export function CompetitionDetails({ competition, session }: CompetitionDetailsP
             </CardContent>
           </Card>
 
-          {competition.examplePrompt && (
+          {competition.starterPrompt && (
             <Card>
               <CardHeader>
-                <CardTitle>Example Prompt</CardTitle>
+                <CardTitle>Starter Prompt</CardTitle>
               </CardHeader>
               <CardContent>
                 <pre className="p-4 bg-muted rounded-md overflow-x-auto">
-                  <code>{competition.examplePrompt}</code>
+                  <code>{competition.starterPrompt}</code>
                 </pre>
               </CardContent>
             </Card>

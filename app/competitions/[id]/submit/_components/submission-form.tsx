@@ -98,17 +98,17 @@ export function SubmissionForm({ competition, userId }: SubmissionFormProps) {
         <p className="text-muted-foreground">{competition.title}</p>
       </div>
 
-      {competition.examplePrompt && (
+      {competition.starterPrompt && (
         <Card>
           <CardHeader>
-            <CardTitle>Example Prompt</CardTitle>
+            <CardTitle>Starter Prompt</CardTitle>
             <CardDescription>
               Use this as a reference for your submission
             </CardDescription>
           </CardHeader>
           <CardContent>
             <pre className="p-4 bg-muted rounded-md overflow-x-auto text-sm">
-              <code>{competition.examplePrompt}</code>
+              <code>{competition.starterPrompt}</code>
             </pre>
           </CardContent>
         </Card>
