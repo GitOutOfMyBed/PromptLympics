@@ -3,7 +3,7 @@ import { verifyAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CompetitionStatus } from "@prisma/client";
 import { encryptApiKey, getProviderFromModel } from "@/lib/encryption";
-import { updateExpiredCompetitions } from "@/lib/utils";
+import { updateExpiredCompetitions } from "@/lib/db-utils";
 
 /**
  * GET /api/competitions

@@ -285,6 +285,57 @@ describe('Competition Upload & Submission Flow', () => {
       // Should be 3/5 = 0.6
       expect(updatedSubmission?.score).toBeCloseTo(0.6, 2)
     })
+
+    it('should store evaluationLog as pure array of details', async () => {
+      const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+      const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+      ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+      // Mock LLM responses
+      let callIndex = 0
+      ;(callLLM as jest.Mock).mockImplementation(() => {
+        const result = validationData[callIndex % validationData.length].expectedOutput
+        callIndex++
+        return Promise.resolve(result)
+      })
+
+      const testPrompt = 'Test evaluationLog format'
+      const submission = await prisma.submission.create({
+        data: {
+          competitionId,
+          userId: testUserId,
+          prompt: testPrompt,
+          status: 'PENDING',
+        }
+      })
+
+      const competition = await prisma.competition.findUnique({
+        where: { id: competitionId }
+      })
+
+      await evaluatePrompt(submission.id, competition!, testPrompt)
+
+      const updatedSubmission = await prisma.submission.findUnique({
+        where: { id: submission.id }
+      })
+
+      // Parse evaluationLog
+      const evaluationLog = JSON.parse(updatedSubmission!.evaluationLog!)
+
+      // Should be array, not object with {correct, total, details}
+      expect(Array.isArray(evaluationLog)).toBe(true)
+      expect(evaluationLog.length).toBe(validationData.length)
+      expect(evaluationLog[0]).toHaveProperty('input')
+      expect(evaluationLog[0]).toHaveProperty('expectedOutput')
+      expect(evaluationLog[0]).toHaveProperty('actualOutput')
+      expect(evaluationLog[0]).toHaveProperty('correct')
+
+      // Should NOT have top-level correct/total fields (those are calculated from array)
+      expect(evaluationLog).not.toHaveProperty('correct')
+      expect(evaluationLog).not.toHaveProperty('total')
+      expect(evaluationLog).not.toHaveProperty('details')
+    })
   })
 
   describe('Step 5: Verify leaderboard updates', () => {
@@ -649,6 +700,129 @@ describe('Competition Upload & Submission Flow', () => {
 
         expect(updatedSubmission?.score).toBe(0.0)
         expect(updatedSubmission?.status).toBe('COMPLETED')
+      })
+    })
+
+    describe('API Security - evaluationLog Sanitization', () => {
+      let testSubmissionId: string
+      const participantUserId = 'participant-user-789'
+
+      beforeAll(async () => {
+        // Create participant user
+        await prisma.user.create({
+          data: {
+            id: participantUserId,
+            email: 'participant@example.com',
+            name: 'Participant User',
+          }
+        })
+
+        // Create and evaluate a submission with full evaluation details
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+        let callIndex = 0
+        ;(callLLM as jest.Mock).mockImplementation(() => {
+          const result = validationData[callIndex % validationData.length].expectedOutput
+          callIndex++
+          return Promise.resolve(result)
+        })
+
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: participantUserId,
+            prompt: 'Test prompt for API security',
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, 'Test prompt for API security')
+        testSubmissionId = submission.id
+      })
+
+      afterAll(async () => {
+        await prisma.submission.deleteMany({
+          where: { userId: participantUserId }
+        })
+        await prisma.user.deleteMany({
+          where: { id: participantUserId }
+        })
+      })
+
+      it('should store full evaluationLog in database for all users', async () => {
+        // Verify database contains full details
+        const submission = await prisma.submission.findUnique({
+          where: { id: testSubmissionId },
+          include: {
+            competition: true,
+          }
+        })
+
+        expect(submission).toBeDefined()
+        expect(submission!.evaluationLog).toBeDefined()
+
+        const evaluationLog = JSON.parse(submission!.evaluationLog!)
+
+        // Database should contain full details
+        expect(Array.isArray(evaluationLog)).toBe(true)
+        expect(evaluationLog.length).toBeGreaterThan(0)
+        expect(evaluationLog[0]).toHaveProperty('input')
+        expect(evaluationLog[0]).toHaveProperty('expectedOutput')
+        expect(evaluationLog[0]).toHaveProperty('actualOutput')
+        expect(evaluationLog[0]).toHaveProperty('correct')
+      })
+
+      it('should hide evaluationLog details from participants via API logic', async () => {
+        // Simulate API behavior: participants should get null evaluationLog
+        const submission = await prisma.submission.findUnique({
+          where: { id: testSubmissionId },
+          include: {
+            competition: true,
+          }
+        })
+
+        // Simulate API sanitization logic
+        const isOrganizer = submission!.competition.organizerId === participantUserId
+        const sanitizedSubmission = isOrganizer
+          ? submission
+          : { ...submission, evaluationLog: null }
+
+        // Participant should see null evaluationLog
+        expect(isOrganizer).toBe(false)
+        expect(sanitizedSubmission.evaluationLog).toBeNull()
+        expect(sanitizedSubmission.score).toBeDefined()
+      })
+
+      it('should show full evaluationLog to organizers via API logic', async () => {
+        // Simulate API behavior: organizers should get full evaluationLog
+        const submission = await prisma.submission.findUnique({
+          where: { id: testSubmissionId },
+          include: {
+            competition: true,
+          }
+        })
+
+        // Simulate API sanitization logic
+        const isOrganizer = submission!.competition.organizerId === testUserId
+        const sanitizedSubmission = isOrganizer
+          ? submission
+          : { ...submission, evaluationLog: null }
+
+        // Organizer should see full evaluationLog
+        expect(isOrganizer).toBe(true)
+        expect(sanitizedSubmission.evaluationLog).toBeDefined()
+
+        const evaluationLog = JSON.parse(sanitizedSubmission.evaluationLog!)
+        expect(Array.isArray(evaluationLog)).toBe(true)
+        expect(evaluationLog[0]).toHaveProperty('input')
+        expect(evaluationLog[0]).toHaveProperty('expectedOutput')
       })
     })
   })

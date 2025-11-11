@@ -100,9 +100,8 @@ model Submission {
   competitionId String
   userId        String
   prompt        String
-  score         Float?
-  accuracy      Float?
-  evaluationLog String?
+  score         Float?           // Accuracy score (indexed for leaderboard performance)
+  evaluationLog String?          // JSON array of test case results (organizer view only)
   status        SubmissionStatus @default(PENDING)
   errorMessage  String?
   submittedAt   DateTime         @default(now())

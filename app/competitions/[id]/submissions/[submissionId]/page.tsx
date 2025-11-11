@@ -6,6 +6,7 @@ import { useAuth } from "@/app/_components/providers/auth-provider"
 import { Navbar } from "@/app/_components/navbar"
 import { SubmissionDetails } from "./_components/submission-details"
 import { authenticatedFetch } from "@/lib/api-client"
+import type { SubmissionWithRelations } from "@/lib/types"
 
 export default function SubmissionDetailPage({
   params,
@@ -14,7 +15,7 @@ export default function SubmissionDetailPage({
 }) {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [submission, setSubmission] = useState<any>(null)
+  const [submission, setSubmission] = useState<SubmissionWithRelations | null>(null)
   const [loadingData, setLoadingData] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -89,7 +90,7 @@ export default function SubmissionDetailPage({
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <SubmissionDetails submission={submission} />
+        <SubmissionDetails submission={submission} currentUserId={user.uid} />
       </div>
     </div>
   )

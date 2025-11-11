@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { evaluatePrompt } from "@/lib/evaluation";
-import { updateExpiredCompetitions } from "@/lib/utils";
+import { updateExpiredCompetitions } from "@/lib/db-utils";
 
 /**
  * POST /api/submissions

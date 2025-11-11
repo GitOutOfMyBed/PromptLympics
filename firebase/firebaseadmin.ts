@@ -1,3 +1,5 @@
+import "server-only"
+
 import * as jwt from "jsonwebtoken"
 import jwksClient from "jwks-rsa"
 

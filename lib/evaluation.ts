@@ -1,14 +1,17 @@
 /**
+ * SERVER-ONLY MODULE
  * Prompt Evaluation Engine
  * Runs submitted prompts against validation test cases and scores them.
  * Uses organizer's encrypted API key for LLM calls.
  */
 
-import { prisma } from "@/lib/prisma"
-import { getValidationData } from "@/firebase/firebaseadmin-storage"
-import { callLLM as callLLMWithVercelAI } from "@/lib/llm"
-import { decryptApiKey } from "@/lib/encryption"
-import type { Competition, TestCase } from "@/lib/types"
+import "server-only";
+
+import { prisma } from "@/lib/prisma";
+import { getValidationData } from "@/firebase/firebaseadmin-storage";
+import { callLLM as callLLMWithVercelAI } from "@/lib/llm";
+import { decryptApiKey } from "@/lib/encryption";
+import type { Competition, TestCase, EvaluationDetail } from "@/lib/types";
 
 /**
  * Evaluates a prompt submission against validation test cases.
@@ -27,11 +30,13 @@ export async function evaluatePrompt(
     await prisma.submission.update({
       where: { id: submissionId },
       data: { status: "EVALUATING" },
-    })
+    });
 
     // Load validation data from Firebase Storage using Admin SDK
     // This bypasses security rules and fetches private validation data
-    const validationData = await getValidationData(competition.validationDataUrl) as TestCase[]
+    const validationData = (await getValidationData(
+      competition.validationDataUrl
+    )) as TestCase[];
 
     // Evaluate prompt against test cases
     const results = await evaluateTestCases(
@@ -39,27 +44,26 @@ export async function evaluatePrompt(
       validationData,
       competition.modelType,
       competition.encryptedApiKey
-    )
+    );
 
     // Calculate score (accuracy)
-    const score = results.correct / results.total
+    const score = results.filter((r) => r.correct).length / results.length;
 
     // Update submission with results
     await prisma.submission.update({
       where: { id: submissionId },
       data: {
         status: "COMPLETED",
-        score,
-        accuracy: score,
-        evaluationLog: JSON.stringify(results.details),
+        score, // Indexed for leaderboard queries
+        evaluationLog: JSON.stringify(results), // Store only test case details
         evaluatedAt: new Date(),
       },
-    })
+    });
 
     // Update competition best score if needed
     const currentCompetition = await prisma.competition.findUnique({
       where: { id: competition.id },
-    })
+    });
 
     if (
       !currentCompetition?.bestScore ||
@@ -71,7 +75,7 @@ export async function evaluatePrompt(
           bestScore: score,
           bestSubmissionId: submissionId,
         },
-      })
+      });
     }
 
     // Check if target score reached (competition should end)
@@ -79,17 +83,17 @@ export async function evaluatePrompt(
       await prisma.competition.update({
         where: { id: competition.id },
         data: { status: "COMPLETED" },
-      })
+      });
     }
   } catch (error) {
-    console.error("Error evaluating prompt:", error)
+    console.error("Error evaluating prompt:", error);
     await prisma.submission.update({
       where: { id: submissionId },
       data: {
         status: "FAILED",
         errorMessage: error instanceof Error ? error.message : "Unknown error",
       },
-    })
+    });
   }
 }
 
@@ -98,44 +102,40 @@ async function evaluateTestCases(
   testCases: TestCase[],
   modelType: string,
   encryptedApiKey?: string | null
-): Promise<{ correct: number; total: number; details: any[] }> {
-  let correct = 0
-  const details: any[] = []
+): Promise<EvaluationDetail[]> {
+  const results: EvaluationDetail[] = [];
 
   for (const testCase of testCases) {
     try {
       // Call the LLM with the prompt and test case input
-      const output = await callLLM(prompt, testCase.input, modelType, encryptedApiKey)
+      const output = await callLLM(
+        prompt,
+        testCase.input,
+        modelType,
+        encryptedApiKey
+      );
 
       // Compare output with expected output
-      const isCorrect = compareOutputs(output, testCase.expectedOutput)
+      const isCorrect = compareOutputs(output, testCase.expectedOutput);
 
-      if (isCorrect) {
-        correct++
-      }
-
-      details.push({
+      results.push({
         input: testCase.input,
         expectedOutput: testCase.expectedOutput,
         actualOutput: output,
         correct: isCorrect,
-      })
+      });
     } catch (error) {
-      details.push({
+      results.push({
         input: testCase.input,
         expectedOutput: testCase.expectedOutput,
         actualOutput: null,
         correct: false,
         error: error instanceof Error ? error.message : "Unknown error",
-      })
+      });
     }
   }
 
-  return {
-    correct,
-    total: testCases.length,
-    details,
-  }
+  return results;
 }
 
 async function callLLM(
@@ -145,17 +145,20 @@ async function callLLM(
   encryptedApiKey?: string | null
 ): Promise<string> {
   // Combine the prompt with the input
-  const fullPrompt = `${prompt}\n\nInput: ${input}\n\nOutput:`
+  const fullPrompt = `${prompt}\n\nInput: ${input}\n\nOutput:`;
 
   // Decrypt API key if provided
-  let apiKey: string | undefined
+  let apiKey: string | undefined;
   if (encryptedApiKey) {
     try {
-      apiKey = await decryptApiKey(encryptedApiKey)
+      apiKey = await decryptApiKey(encryptedApiKey);
     } catch (error) {
-      console.error("Failed to decrypt API key, falling back to environment variable:", error)
+      console.error(
+        "Failed to decrypt API key, falling back to environment variable:",
+        error
+      );
       // Fall back to environment variable if decryption fails
-      apiKey = undefined
+      apiKey = undefined;
     }
   }
 
@@ -164,14 +167,14 @@ async function callLLM(
     model: modelName,
     prompt: fullPrompt,
     temperature: 0,
-    apiKey,  // Will use env var if undefined
-  })
+    apiKey, // Will use env var if undefined
+  });
 }
 
 function compareOutputs(actual: string, expected: string): boolean {
   // Normalize strings for comparison
   const normalize = (str: string) =>
-    str.toLowerCase().trim().replace(/\s+/g, " ")
+    str.toLowerCase().trim().replace(/\s+/g, " ");
 
-  return normalize(actual) === normalize(expected)
+  return normalize(actual) === normalize(expected);
 }

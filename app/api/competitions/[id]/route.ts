@@ -24,7 +24,12 @@ export async function GET(
           orderBy: {
             score: "desc",
           },
-          include: {
+          select: {
+            id: true,
+            score: true,
+            status: true,
+            submittedAt: true,
+            // Exclude prompt and evaluationLog to protect validation data
             user: {
               select: {
                 name: true,

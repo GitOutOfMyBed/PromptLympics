@@ -1,3 +1,5 @@
+import "server-only"
+
 import { verifyIdToken } from "@/firebase/firebaseadmin"
 import { prisma } from "@/lib/prisma"
 

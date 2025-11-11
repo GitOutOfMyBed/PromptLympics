@@ -1,3 +1,5 @@
+import "server-only"
+
 import * as admin from "firebase-admin";
 
 // Initialize Firebase Admin SDK if not already initialized

@@ -41,6 +41,17 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
+    // Hide evaluation log from participants (protect validation dataset)
+    // Organizers get full test case details, participants only see score
+    const isOrganizer = submission.competition.organizerId === auth.user.id
+
+    if (!isOrganizer) {
+      return NextResponse.json({
+        ...submission,
+        evaluationLog: null, // Hide all test case details from participants
+      })
+    }
+
     return NextResponse.json(submission)
   } catch (error) {
     console.error("Error fetching submission:", error)

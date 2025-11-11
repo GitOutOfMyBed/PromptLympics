@@ -14,6 +14,8 @@ Competition Submission Page: The competition page will ask the user to submit a 
 
 User Profile Page: It should have a history of all the users ongoing and previous participated competitions and their results. There should also be an option to submit a competition.
 
+NEVER SHOW EVALUATION DATASET TO CANDIDATES. Training dataset can be utilized for training by candidate.
+
 UI/UX/Theme:
 Default dark theme with option to choose to use white theme in user settings.
 The competitions section should be more of a simple compressed table list rather than using cards.

@@ -1,8 +1,11 @@
 /**
+ * SERVER-ONLY MODULE
  * API Key Encryption Module
  * Uses AES-256-GCM to encrypt organizer API keys for secure storage.
  * Keys are encrypted before saving to DB and decrypted for evaluation.
  */
+
+import "server-only"
 
 import * as crypto from 'crypto'
 
