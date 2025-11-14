@@ -1,13 +1,10 @@
 /**
  * LLM Interface Module
  * Provides unified interface for calling OpenAI, Anthropic, and Google models.
- * Handles model selection, API keys, and cost estimation.
+ * Uses OpenAI SDK with custom base URLs for different providers.
  */
 
-import { generateText } from "ai";
-import { openai, createOpenAI } from "@ai-sdk/openai";
-import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
-import { google, createGoogleGenerativeAI } from "@ai-sdk/google";
+import OpenAI from "openai";
 
 export interface LLMCallOptions {
   model: string;
@@ -27,135 +24,133 @@ export const SUPPORTED_MODELS = {
     provider: "openai",
     displayName: "gpt-5",
     costPerMillion: { input: 2.5, output: 10 },
+    baseURL: "https://api.openai.com/v1",
   },
   "gpt-5-mini": {
     provider: "openai",
     displayName: "gpt-5-mini",
     costPerMillion: { input: 0.15, output: 0.6 },
+    baseURL: "https://api.openai.com/v1",
   },
   "gpt-5-codex": {
     provider: "openai",
     displayName: "gpt-5-codex",
     costPerMillion: { input: 0.5, output: 1.5 },
+    baseURL: "https://api.openai.com/v1",
   },
 
-  // Anthropic Models
+  // Anthropic Models (via OpenAI-compatible endpoint)
   "claude-sonnet-4.5": {
     provider: "anthropic",
     displayName: "claude-sonnet-4.5",
     costPerMillion: { input: 3, output: 15 },
+    baseURL: "https://api.anthropic.com/v1",
   },
   "claude-haiku-4.5": {
     provider: "anthropic",
     displayName: "claude-haiku-4.5",
     costPerMillion: { input: 1, output: 5 },
+    baseURL: "https://api.anthropic.com/v1",
   },
 
-  // Google Models
+  // Google Models (via OpenAI-compatible endpoint)
   "gemini-2.5-pro": {
     provider: "google",
     displayName: "gemini-2.5-pro",
     costPerMillion: { input: 1.25, output: 10 },
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
   },
-
   "gemini-2.5-flash": {
     provider: "google",
     displayName: "gemini-2.5-flash",
     costPerMillion: { input: 1.25, output: 5 },
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
   },
   "gemini-1.5-flash-latest": {
     provider: "google",
     displayName: "gemini-2.5-flash-lite",
     costPerMillion: { input: 0.075, output: 0.3 },
+    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
   },
 } as const;
 
 export type SupportedModel = keyof typeof SUPPORTED_MODELS;
 
 /**
- * Get the appropriate AI SDK model instance for the given model name
- * @param modelName - The model identifier (e.g., "gpt-4o-mini")
- * @param apiKey - Optional custom API key to use instead of environment variable
- * @param baseURL - Optional custom base URL (e.g., for OpenRouter)
- * @param headers - Optional custom headers
+ * Get the appropriate API key environment variable for a provider
  */
-function getModel(
-  modelName: string,
-  apiKey?: string,
-  baseURL?: string,
-  headers?: Record<string, string>
-) {
-  // If custom baseURL is provided, treat as OpenAI-compatible API (like OpenRouter)
-  if (baseURL) {
-    const customOpenAI = createOpenAI({
-      apiKey: apiKey || process.env.OPENAI_API_KEY || '',
-      baseURL,
-      headers,
-    });
-    return customOpenAI(modelName);
-  }
-
-  const modelConfig = SUPPORTED_MODELS[modelName as SupportedModel];
-
-  if (!modelConfig) {
-    throw new Error(
-      `Unsupported model: ${modelName}. Supported models: ${Object.keys(
-        SUPPORTED_MODELS
-      ).join(", ")}`
-    );
-  }
-
-  switch (modelConfig.provider) {
+function getProviderApiKey(provider: string): string | undefined {
+  switch (provider) {
     case "openai":
-      // Use custom API key if provided, otherwise use default from env
-      if (apiKey) {
-        const customOpenAI = createOpenAI({ apiKey });
-        return customOpenAI(modelName);
-      }
-      return openai(modelName);
-
+      return process.env.OPENAI_API_KEY;
     case "anthropic":
-      // Use custom API key if provided, otherwise use default from env
-      if (apiKey) {
-        const customAnthropic = createAnthropic({ apiKey });
-        return customAnthropic(modelName);
-      }
-      return anthropic(modelName);
-
+      return process.env.ANTHROPIC_API_KEY;
     case "google":
-      // Use custom API key if provided, otherwise use default from env
-      if (apiKey) {
-        const customGoogle = createGoogleGenerativeAI({ apiKey });
-        return customGoogle(modelName);
-      }
-      return google(modelName);
-
+      return process.env.GOOGLE_API_KEY;
     default:
-      throw new Error(`Unknown provider for model: ${modelName}`);
+      return undefined;
   }
 }
 
 /**
- * Call an LLM using the Vercel AI SDK
+ * Call an LLM using the OpenAI SDK
+ * Works with OpenAI, Anthropic, Google, OpenRouter, and any OpenAI-compatible API
  */
 export async function callLLM(options: LLMCallOptions): Promise<string> {
   const {
     model,
     prompt,
     temperature = 0,
-    apiKey, // Extract custom API key if provided
-    baseURL, // Extract custom base URL if provided
-    headers, // Extract custom headers if provided
+    apiKey,
+    baseURL,
+    headers,
   } = options;
 
   try {
-    const { text } = await generateText({
-      model: getModel(model, apiKey, baseURL, headers), // Pass all custom options to getModel
-      prompt,
+    // Determine base URL and API key
+    let finalBaseURL = baseURL;
+    let finalApiKey = apiKey;
+
+    // If no custom baseURL provided, check if it's a supported model
+    if (!finalBaseURL) {
+      const modelConfig = SUPPORTED_MODELS[model as SupportedModel];
+      if (modelConfig) {
+        finalBaseURL = modelConfig.baseURL;
+        // Use provider-specific API key if no custom key provided
+        if (!finalApiKey) {
+          finalApiKey = getProviderApiKey(modelConfig.provider);
+        }
+      }
+    }
+
+    // Fallback to OpenAI if no configuration found
+    if (!finalBaseURL) {
+      finalBaseURL = "https://api.openai.com/v1";
+    }
+    if (!finalApiKey) {
+      finalApiKey = process.env.OPENAI_API_KEY;
+    }
+
+    // Create OpenAI client with configuration
+    const client = new OpenAI({
+      apiKey: finalApiKey,
+      baseURL: finalBaseURL,
+      defaultHeaders: headers,
+    });
+
+    // Call the API
+    const completion = await client.chat.completions.create({
+      model,
+      messages: [{ role: "user", content: prompt }],
       temperature,
     });
 
-    return text.trim();
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content in response");
+    }
+
+    return content.trim();
   } catch (error) {
     console.error(`LLM call failed for model ${model}:`, error);
 
