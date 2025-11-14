@@ -126,7 +126,7 @@ describe('LLM Module', () => {
 
     it('should include all major providers', () => {
       const models = getSupportedModelsList()
-      const providers = [...new Set(models.map(m => m.provider))]
+      const providers = Array.from(new Set(models.map(m => m.provider)))
 
       expect(providers).toContain('openai')
       expect(providers).toContain('anthropic')

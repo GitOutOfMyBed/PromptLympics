@@ -9,9 +9,11 @@ import type { SubmissionWithRelations } from '@/lib/types'
 
 // Mock next/link
 jest.mock('next/link', () => {
-  return ({ children, href }: any) => {
+  const MockLink = ({ children, href }: any) => {
     return <a href={href}>{children}</a>
   }
+  MockLink.displayName = 'Link'
+  return MockLink
 })
 
 describe('SubmissionDetails Component', () => {
@@ -22,7 +24,17 @@ describe('SubmissionDetails Component', () => {
     description: 'Test description',
     organizationName: 'Test Org',
     totalPrize: 1000,
+    firstPlacePrize: null,
+    secondPlacePrize: null,
+    thirdPlacePrize: null,
     prizeDistribution: 'WINNER_TAKES_ALL' as const,
+    minimumScore: null,
+    targetScore: null,
+    maxSubmissionsPerUser: 3,
+    starterPrompt: null,
+    characterLimit: null,
+    tokenLimit: null,
+    customModelUrl: null,
     modelType: 'gpt-5-mini',
     trainingDataUrl: 'https://example.com/training.json',
     validationDataUrl: 'https://example.com/validation.json',
@@ -31,14 +43,12 @@ describe('SubmissionDetails Component', () => {
     startDate: new Date(),
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     status: 'ACTIVE' as const,
-    maxSubmissionsPerUser: 3,
     createdAt: new Date(),
     updatedAt: new Date(),
     bestScore: null,
     bestSubmissionId: null,
-    targetScore: null,
-    encryptedApiKey: null,
-    apiKeyProvider: null,
+    encryptedApiKey: 'encrypted-key',
+    apiKeyProvider: 'openai',
   }
 
   describe('FAILED Status Display', () => {
@@ -56,11 +66,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -90,11 +97,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -124,11 +128,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -167,11 +168,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: new Date(),
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -201,11 +199,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: new Date(),
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -236,11 +231,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -273,11 +265,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -303,11 +292,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
@@ -333,11 +319,8 @@ describe('SubmissionDetails Component', () => {
         evaluatedAt: null,
         competition: mockCompetition,
         user: {
-          id: 'user-123',
           email: 'test@example.com',
           name: 'Test User',
-          createdAt: new Date(),
-          updatedAt: new Date(),
         },
       }
 
