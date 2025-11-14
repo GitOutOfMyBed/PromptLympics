@@ -91,7 +91,9 @@ model Competition {
 
   // API Key configuration (encrypted)
   encryptedApiKey    String
-  apiKeyProvider     String            // "openai", "anthropic", or "google"
+  apiKeyProvider     String            // "openai", "anthropic", "google", or "custom"
+  customBaseUrl      String?           // Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter)
+  customHeaders      String?           // JSON string of custom headers
 
   organizer          User              @relation(fields: [organizerId], references: [id])
   submissions        Submission[]
@@ -159,7 +161,9 @@ model PracticeChallenge {
 
   // API Key configuration (encrypted)
   encryptedApiKey       String
-  apiKeyProvider        String               // "openai", "anthropic", or "google"
+  apiKeyProvider        String               // "openai", "anthropic", "google", or "custom"
+  customBaseUrl         String?              // Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter)
+  customHeaders         String?              // JSON string of custom headers
 
   creator               User                 @relation(fields: [creatorId], references: [id])
   submissions           PracticeSubmission[]

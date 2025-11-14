@@ -14,6 +14,8 @@ export interface LLMCallOptions {
   prompt: string;
   temperature?: number;
   apiKey?: string; // Optional custom API key
+  baseURL?: string; // Optional custom base URL (e.g., for OpenRouter)
+  headers?: Record<string, string>; // Optional custom headers
 }
 
 /**
@@ -74,8 +76,25 @@ export type SupportedModel = keyof typeof SUPPORTED_MODELS;
  * Get the appropriate AI SDK model instance for the given model name
  * @param modelName - The model identifier (e.g., "gpt-4o-mini")
  * @param apiKey - Optional custom API key to use instead of environment variable
+ * @param baseURL - Optional custom base URL (e.g., for OpenRouter)
+ * @param headers - Optional custom headers
  */
-function getModel(modelName: string, apiKey?: string) {
+function getModel(
+  modelName: string,
+  apiKey?: string,
+  baseURL?: string,
+  headers?: Record<string, string>
+) {
+  // If custom baseURL is provided, treat as OpenAI-compatible API (like OpenRouter)
+  if (baseURL) {
+    const customOpenAI = createOpenAI({
+      apiKey: apiKey || process.env.OPENAI_API_KEY || '',
+      baseURL,
+      headers,
+    });
+    return customOpenAI(modelName);
+  }
+
   const modelConfig = SUPPORTED_MODELS[modelName as SupportedModel];
 
   if (!modelConfig) {
@@ -125,11 +144,13 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
     prompt,
     temperature = 0,
     apiKey, // Extract custom API key if provided
+    baseURL, // Extract custom base URL if provided
+    headers, // Extract custom headers if provided
   } = options;
 
   try {
     const { text } = await generateText({
-      model: getModel(model, apiKey), // Pass API key to getModel
+      model: getModel(model, apiKey, baseURL, headers), // Pass all custom options to getModel
       prompt,
       temperature,
     });

@@ -20,6 +20,8 @@ type PracticeChallenge = {
   validationDataUrl: string;
   encryptedApiKey: string;
   targetScore?: number | null;
+  customBaseUrl?: string | null;
+  customHeaders?: string | null;
 };
 
 /**
@@ -52,7 +54,9 @@ export async function evaluatePracticePrompt(
       prompt,
       validationData,
       practiceChallenge.modelType,
-      practiceChallenge.encryptedApiKey
+      practiceChallenge.encryptedApiKey,
+      practiceChallenge.customBaseUrl,
+      practiceChallenge.customHeaders
     );
 
     // Calculate score (accuracy)
@@ -102,7 +106,9 @@ async function evaluateTestCases(
   prompt: string,
   testCases: TestCase[],
   modelType: string,
-  encryptedApiKey?: string | null
+  encryptedApiKey?: string | null,
+  customBaseUrl?: string | null,
+  customHeaders?: string | null
 ): Promise<EvaluationDetail[]> {
   const results: EvaluationDetail[] = [];
 
@@ -113,7 +119,9 @@ async function evaluateTestCases(
         prompt,
         testCase.input,
         modelType,
-        encryptedApiKey
+        encryptedApiKey,
+        customBaseUrl,
+        customHeaders
       );
 
       // Compare output with expected output
@@ -143,7 +151,9 @@ async function callLLM(
   prompt: string,
   input: string,
   modelName: string,
-  encryptedApiKey?: string | null
+  encryptedApiKey?: string | null,
+  customBaseUrl?: string | null,
+  customHeaders?: string | null
 ): Promise<string> {
   // Combine the prompt with the input
   const fullPrompt = `${prompt}\n\nInput: ${input}\n\nOutput:`;
@@ -163,12 +173,24 @@ async function callLLM(
     }
   }
 
-  // Use the new Vercel AI SDK implementation with optional custom API key
+  // Parse custom headers if provided
+  let headers: Record<string, string> | undefined;
+  if (customHeaders) {
+    try {
+      headers = JSON.parse(customHeaders);
+    } catch (error) {
+      console.warn("Failed to parse custom headers:", error);
+    }
+  }
+
+  // Use the new Vercel AI SDK implementation with custom configuration
   return callLLMWithVercelAI({
     model: modelName,
     prompt: fullPrompt,
     temperature: 0,
-    apiKey, // Will use env var if undefined
+    apiKey,
+    baseURL: customBaseUrl || undefined,
+    headers,
   });
 }
 

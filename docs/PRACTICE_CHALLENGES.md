@@ -114,6 +114,27 @@ Use cheaper models for practice:
 - `claude-3-haiku` for simple tasks
 - Reserve expensive models for advanced challenges
 
+### 6. Using OpenRouter for Free Models
+Save costs with OpenRouter.ai:
+- Access **free models** like `deepseek/deepseek-chat-v3.1:free`
+- Use a single API key for hundreds of models
+- Configure with `customBaseUrl` and `customHeaders`
+
+**Example OpenRouter Configuration:**
+```typescript
+{
+  modelType: 'deepseek/deepseek-chat-v3.1:free',
+  apiKeyProvider: 'custom',
+  customBaseUrl: 'https://openrouter.ai/api/v1',
+  customHeaders: JSON.stringify({
+    'HTTP-Referer': 'https://promptlympics.com',
+    'X-Title': 'PromptLympics',
+  })
+}
+```
+
+See the seed script example for a complete OpenRouter challenge!
+
 ## Example Challenges
 
 ### Beginner: Sentiment Analysis

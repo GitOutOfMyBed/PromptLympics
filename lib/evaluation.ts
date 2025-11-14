@@ -53,7 +53,9 @@ export async function evaluatePrompt(
       prompt,
       validationData,
       competition.modelType,
-      competition.encryptedApiKey
+      competition.encryptedApiKey,
+      competition.customBaseUrl,
+      competition.customHeaders
     );
 
     // Calculate score (accuracy)
@@ -129,7 +131,9 @@ async function evaluateTestCases(
   prompt: string,
   testCases: TestCase[],
   modelType: string,
-  encryptedApiKey: string
+  encryptedApiKey: string,
+  customBaseUrl?: string | null,
+  customHeaders?: string | null
 ): Promise<EvaluationDetail[]> {
   const results: EvaluationDetail[] = [];
 
@@ -141,17 +145,29 @@ async function evaluateTestCases(
     throw new Error("Failed to decrypt API key");
   }
 
+  // Parse custom headers if provided
+  let headers: Record<string, string> | undefined;
+  if (customHeaders) {
+    try {
+      headers = JSON.parse(customHeaders);
+    } catch (error) {
+      console.warn("Failed to parse custom headers:", error);
+    }
+  }
+
   for (const testCase of testCases) {
     // Call the LLM with the prompt and test case input
     // If this throws an error, let it propagate to fail the evaluation
     const fullPrompt = `${prompt}\n\nInput: ${testCase.input}\n\nOutput:`;
 
-    // Use the new Vercel AI SDK implementation with optional custom API key
+    // Use the new Vercel AI SDK implementation with custom configuration
     const output = await callLLM({
       model: modelType,
       prompt: fullPrompt,
       temperature: 0,
-      apiKey, // Will use env var if undefined
+      apiKey,
+      baseURL: customBaseUrl || undefined,
+      headers,
     });
     // Compare output with expected output
     const isCorrect = compareOutputs(output, testCase.expectedOutput);

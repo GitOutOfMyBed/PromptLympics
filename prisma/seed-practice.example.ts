@@ -169,6 +169,59 @@ Output only the category name.`,
 
   console.log('Created practice challenge:', extractionChallenge.title);
 
+  // Example: Using OpenRouter with DeepSeek (FREE model!)
+  const openRouterChallenge = await prisma.practiceChallenge.create({
+    data: {
+      title: 'Quick Facts: Question Answering',
+      description: `Answer factual questions concisely.
+
+**Using OpenRouter with DeepSeek (FREE)**
+
+This challenge uses OpenRouter.ai to access the free DeepSeek model.
+
+**What you'll learn:**
+- Crafting concise, accurate responses
+- Fact extraction from context
+- Handling questions with limited information`,
+      organizationName: 'PromptLympics Academy',
+
+      minimumScore: 0.7,
+      targetScore: 0.85,
+
+      starterPrompt: `Answer the question concisely based on the given context.
+If you don't know the answer, say "I don't know."
+
+Keep answers brief and factual.`,
+
+      characterLimit: 400,
+      tokenLimit: 120,
+      maxSubmissionsPerUser: 999,
+
+      // OpenRouter configuration
+      modelType: 'deepseek/deepseek-chat-v3.1:free', // Free model on OpenRouter!
+      encryptedApiKey: await encryptApiKey(process.env.OPENROUTER_API_KEY!),
+      apiKeyProvider: 'custom', // Mark as custom since we're using a custom base URL
+
+      // Custom base URL for OpenRouter
+      customBaseUrl: 'https://openrouter.ai/api/v1',
+
+      // Custom headers for OpenRouter (optional but recommended)
+      customHeaders: JSON.stringify({
+        'HTTP-Referer': 'https://promptlympics.com',
+        'X-Title': 'PromptLympics',
+      }),
+
+      trainingDataUrl: 'https://storage.googleapis.com/your-bucket/qa-training.json',
+      validationDataUrl: 'practice/qa-validation.json',
+      trainingDataSize: 25,
+      validationDataSize: 50,
+
+      creatorId: 'YOUR_ADMIN_USER_ID',
+    },
+  });
+
+  console.log('Created practice challenge (OpenRouter):', openRouterChallenge.title);
+
   console.log('✅ Seeding complete!');
 }
 
