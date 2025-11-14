@@ -367,7 +367,7 @@ describe('Competition Upload & Submission Flow', () => {
 
   describe('Additional Test Cases', () => {
     describe('Failed Evaluations', () => {
-      it('should handle LLM errors gracefully', async () => {
+      it('should mark submission as FAILED when all test cases fail with LLM errors', async () => {
         const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
         const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
 
@@ -394,10 +394,91 @@ describe('Competition Upload & Submission Flow', () => {
           where: { id: submission.id }
         })
 
-        // When individual test cases fail, evaluation completes with score 0
-        expect(updatedSubmission?.status).toBe('COMPLETED')
-        expect(updatedSubmission?.score).toBe(0)
-        expect(updatedSubmission?.evaluationLog).toContain('error')
+        // When any test case fails with an error, submission should be marked as FAILED
+        expect(updatedSubmission?.status).toBe('FAILED')
+        expect(updatedSubmission?.errorMessage).toBeDefined()
+        expect(updatedSubmission?.errorMessage).toContain('LLM API error')
+        expect(updatedSubmission?.score).toBeNull()
+      })
+
+      it('should mark submission as FAILED when API quota is exceeded', async () => {
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+        // Simulate quota exceeded error
+        ;(callLLM as jest.Mock).mockRejectedValue(
+          new Error('API quota exceeded for gemini-2.5-pro. Please check your API key billing or wait before retrying.')
+        )
+
+        const testPrompt = 'Test prompt with quota error'
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: testPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, testPrompt)
+
+        const updatedSubmission = await prisma.submission.findUnique({
+          where: { id: submission.id }
+        })
+
+        // Submission should be marked as FAILED with user-friendly error message
+        expect(updatedSubmission?.status).toBe('FAILED')
+        expect(updatedSubmission?.errorMessage).toBeDefined()
+        expect(updatedSubmission?.errorMessage).toContain('API quota exceeded')
+        expect(updatedSubmission?.score).toBeNull()
+      })
+
+      it('should mark submission as FAILED when first test case fails with error', async () => {
+        const validationPath = path.join(__dirname, '../fixtures/validation-data.json')
+        const validationData = JSON.parse(fs.readFileSync(validationPath, 'utf-8'))
+
+        ;(getValidationData as jest.Mock).mockResolvedValue(validationData)
+
+        // First call fails, subsequent calls would succeed
+        let callCount = 0
+        ;(callLLM as jest.Mock).mockImplementation(() => {
+          callCount++
+          if (callCount === 1) {
+            return Promise.reject(new Error('Network timeout'))
+          }
+          return Promise.resolve('positive')
+        })
+
+        const testPrompt = 'Test prompt with partial failure'
+        const submission = await prisma.submission.create({
+          data: {
+            competitionId,
+            userId: testUserId,
+            prompt: testPrompt,
+            status: 'PENDING',
+          }
+        })
+
+        const competition = await prisma.competition.findUnique({
+          where: { id: competitionId }
+        })
+
+        await evaluatePrompt(submission.id, competition!, testPrompt)
+
+        const updatedSubmission = await prisma.submission.findUnique({
+          where: { id: submission.id }
+        })
+
+        // Even if only one test case fails with error, submission should be FAILED
+        expect(updatedSubmission?.status).toBe('FAILED')
+        expect(updatedSubmission?.errorMessage).toContain('Network timeout')
+        expect(updatedSubmission?.score).toBeNull()
       })
 
       it('should handle invalid validation data format', async () => {
@@ -425,9 +506,9 @@ describe('Competition Upload & Submission Flow', () => {
           where: { id: submission.id }
         })
 
-        // Invalid data format will cause test cases to fail, resulting in score 0
-        expect(updatedSubmission?.status).toBe('COMPLETED')
-        expect(updatedSubmission?.score).toBe(0)
+        // Invalid data format will cause test cases to fail with errors
+        expect(updatedSubmission?.status).toBe('FAILED')
+        expect(updatedSubmission?.errorMessage).toBeDefined()
       })
     })
 

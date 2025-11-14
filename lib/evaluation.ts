@@ -9,7 +9,7 @@ import "server-only";
 
 import { prisma } from "@/lib/prisma";
 import { getValidationData } from "@/firebase/firebaseadmin-storage";
-import { callLLM as callLLMWithVercelAI } from "@/lib/llm";
+import { callLLM } from "@/lib/llm";
 import { decryptApiKey } from "@/lib/encryption";
 import type { Competition, TestCase, EvaluationDetail } from "@/lib/types";
 
@@ -25,18 +25,28 @@ export async function evaluatePrompt(
   competition: Competition,
   prompt: string
 ): Promise<void> {
+  console.log(
+    `[Evaluation] Starting evaluation for submission ${submissionId}`
+  );
   try {
     // Update status to evaluating
     await prisma.submission.update({
       where: { id: submissionId },
       data: { status: "EVALUATING" },
     });
+    console.log(
+      `[Evaluation] Updated submission ${submissionId} to EVALUATING`
+    );
 
     // Load validation data from Firebase Storage using Admin SDK
     // This bypasses security rules and fetches private validation data
+    console.log(
+      `[Evaluation] Loading validation data from ${competition.validationDataUrl}`
+    );
     const validationData = (await getValidationData(
       competition.validationDataUrl
     )) as TestCase[];
+    console.log(`[Evaluation] Loaded ${validationData.length} test cases`);
 
     // Evaluate prompt against test cases
     const results = await evaluateTestCases(
@@ -87,13 +97,31 @@ export async function evaluatePrompt(
     }
   } catch (error) {
     console.error("Error evaluating prompt:", error);
-    await prisma.submission.update({
-      where: { id: submissionId },
-      data: {
-        status: "FAILED",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-      },
-    });
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.log(
+      `[Evaluation] Updating submission ${submissionId} to FAILED with error:`,
+      errorMessage
+    );
+
+    try {
+      await prisma.submission.update({
+        where: { id: submissionId },
+        data: {
+          status: "FAILED",
+          errorMessage,
+        },
+      });
+      console.log(
+        `[Evaluation] Successfully updated submission ${submissionId} to FAILED`
+      );
+    } catch (updateError) {
+      console.error(
+        `[Evaluation] CRITICAL: Failed to update submission ${submissionId} to FAILED:`,
+        updateError
+      );
+      throw updateError; // Re-throw so it's visible in the API error handler
+    }
   }
 }
 
@@ -101,74 +129,42 @@ async function evaluateTestCases(
   prompt: string,
   testCases: TestCase[],
   modelType: string,
-  encryptedApiKey?: string | null
+  encryptedApiKey: string
 ): Promise<EvaluationDetail[]> {
   const results: EvaluationDetail[] = [];
 
+  // Decrypt API key if provided
+  let apiKey: string;
+  try {
+    apiKey = await decryptApiKey(encryptedApiKey);
+  } catch (error) {
+    throw new Error("Failed to decrypt API key");
+  }
+
   for (const testCase of testCases) {
-    try {
-      // Call the LLM with the prompt and test case input
-      const output = await callLLM(
-        prompt,
-        testCase.input,
-        modelType,
-        encryptedApiKey
-      );
+    // Call the LLM with the prompt and test case input
+    // If this throws an error, let it propagate to fail the evaluation
+    const fullPrompt = `${prompt}\n\nInput: ${testCase.input}\n\nOutput:`;
 
-      // Compare output with expected output
-      const isCorrect = compareOutputs(output, testCase.expectedOutput);
+    // Use the new Vercel AI SDK implementation with optional custom API key
+    const output = await callLLM({
+      model: modelType,
+      prompt: fullPrompt,
+      temperature: 0,
+      apiKey, // Will use env var if undefined
+    });
+    // Compare output with expected output
+    const isCorrect = compareOutputs(output, testCase.expectedOutput);
 
-      results.push({
-        input: testCase.input,
-        expectedOutput: testCase.expectedOutput,
-        actualOutput: output,
-        correct: isCorrect,
-      });
-    } catch (error) {
-      results.push({
-        input: testCase.input,
-        expectedOutput: testCase.expectedOutput,
-        actualOutput: null,
-        correct: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
+    results.push({
+      input: testCase.input,
+      expectedOutput: testCase.expectedOutput,
+      actualOutput: output,
+      correct: isCorrect,
+    });
   }
 
   return results;
-}
-
-async function callLLM(
-  prompt: string,
-  input: string,
-  modelName: string,
-  encryptedApiKey?: string | null
-): Promise<string> {
-  // Combine the prompt with the input
-  const fullPrompt = `${prompt}\n\nInput: ${input}\n\nOutput:`;
-
-  // Decrypt API key if provided
-  let apiKey: string | undefined;
-  if (encryptedApiKey) {
-    try {
-      apiKey = await decryptApiKey(encryptedApiKey);
-    } catch (error) {
-      console.error(
-        "Failed to decrypt API key, falling back to environment variable:",
-        error
-      );
-      // Fall back to environment variable if decryption fails
-      apiKey = undefined;
-    }
-  }
-
-  // Use the new Vercel AI SDK implementation with optional custom API key
-  return callLLMWithVercelAI({
-    model: modelName,
-    prompt: fullPrompt,
-    temperature: 0,
-    apiKey, // Will use env var if undefined
-  });
 }
 
 function compareOutputs(actual: string, expected: string): boolean {

@@ -83,7 +83,7 @@ describe('LLM Module', () => {
           model: 'gpt-5',
           prompt: 'Test',
         })
-      ).rejects.toThrow(`LLM API error: ${errorMessage}`)
+      ).rejects.toThrow(errorMessage)
     })
   })
 

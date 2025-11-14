@@ -137,11 +137,14 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
     return text.trim();
   } catch (error) {
     console.error(`LLM call failed for model ${model}:`, error);
-    throw new Error(
-      `LLM API error: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`
-    );
+
+    // Extract user-friendly error message
+    let errorMessage = "Unknown error";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
   }
 }
 
