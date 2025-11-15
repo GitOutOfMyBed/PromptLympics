@@ -101,15 +101,16 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
     // Determine base URL
     let finalBaseURL = baseURL;
 
-    // If no custom baseURL provided, check if it's a supported model
+    // If no custom baseURL provided, must be a supported model
     if (!finalBaseURL) {
       const modelConfig = SUPPORTED_MODELS[model as SupportedModel];
-      if (modelConfig) {
-        finalBaseURL = modelConfig.baseURL;
-      } else {
-        // Unknown model, assume OpenAI endpoint
-        finalBaseURL = "https://api.openai.com/v1";
+      if (!modelConfig) {
+        throw new Error(
+          `Model "${model}" is not supported. Either use a supported model or provide a custom baseURL. ` +
+          `Supported models: ${Object.keys(SUPPORTED_MODELS).join(", ")}`
+        );
       }
+      finalBaseURL = modelConfig.baseURL;
     }
 
     // Create OpenAI client with configuration
