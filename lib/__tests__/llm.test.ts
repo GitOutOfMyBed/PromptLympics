@@ -1,22 +1,17 @@
 import { callLLM, estimateCost, getSupportedModelsList, isModelSupported, SUPPORTED_MODELS } from '../llm'
-import { generateText } from 'ai'
 
-// Mock the AI SDK
-jest.mock('ai', () => ({
-  generateText: jest.fn(),
-}))
+const mockCreate = jest.fn()
 
-jest.mock('@ai-sdk/openai', () => ({
-  openai: jest.fn((model: string) => ({ provider: 'openai', model })),
-}))
-
-jest.mock('@ai-sdk/anthropic', () => ({
-  anthropic: jest.fn((model: string) => ({ provider: 'anthropic', model })),
-}))
-
-jest.mock('@ai-sdk/google', () => ({
-  google: jest.fn((model: string) => ({ provider: 'google', model })),
-}))
+// Mock OpenAI SDK
+jest.mock('openai', () => {
+  return jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: mockCreate,
+      },
+    },
+  }))
+})
 
 describe('LLM Module', () => {
   beforeEach(() => {
@@ -24,64 +19,73 @@ describe('LLM Module', () => {
   })
 
   describe('callLLM', () => {
-    it('should call generateText with correct parameters for OpenAI model', async () => {
-      const mockText = 'Test response'
-      ;(generateText as jest.Mock).mockResolvedValue({ text: mockText })
+    it('should call OpenAI API with correct parameters for OpenAI model', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Test response' } }],
+      })
 
       const result = await callLLM({
         model: 'gpt-5-mini',
         prompt: 'Test prompt',
         temperature: 0.5,
+        apiKey: 'test-key',
       })
 
-      expect(generateText).toHaveBeenCalledWith({
-        model: expect.objectContaining({
-          provider: 'openai',
-          model: 'gpt-5-mini',
-        }),
-        prompt: 'Test prompt',
+      expect(mockCreate).toHaveBeenCalledWith({
+        model: 'gpt-5-mini',
+        messages: [{ role: 'user', content: 'Test prompt' }],
         temperature: 0.5,
       })
-      expect(result).toBe(mockText)
+      expect(result).toBe('Test response')
     })
 
-    it('should call generateText with correct parameters for Anthropic model', async () => {
-      const mockText = 'Claude response'
-      ;(generateText as jest.Mock).mockResolvedValue({ text: mockText })
+    it('should call OpenAI API with correct parameters for Anthropic model', async () => {
+      mockCreate.mockResolvedValue({
+        choices: [{ message: { content: 'Claude response' } }],
+      })
 
       const result = await callLLM({
         model: 'claude-sonnet-4.5',
         prompt: 'Another test',
+        apiKey: 'test-key',
       })
 
-      expect(generateText).toHaveBeenCalledWith({
-        model: expect.objectContaining({
-          provider: 'anthropic',
-          model: 'claude-sonnet-4.5',
-        }),
-        prompt: 'Another test',
+      expect(mockCreate).toHaveBeenCalledWith({
+        model: 'claude-sonnet-4.5',
+        messages: [{ role: 'user', content: 'Another test' }],
         temperature: 0,
       })
-      expect(result).toBe(mockText)
+      expect(result).toBe('Claude response')
     })
 
-    it('should throw error for unsupported model', async () => {
+    it('should throw error for unsupported model without baseURL', async () => {
       await expect(
         callLLM({
           model: 'unsupported-model',
           prompt: 'Test',
+          apiKey: 'test-key',
         })
-      ).rejects.toThrow('Unsupported model: unsupported-model')
+      ).rejects.toThrow('Model "unsupported-model" is not supported')
+    })
+
+    it('should require API key', async () => {
+      await expect(
+        callLLM({
+          model: 'gpt-5',
+          prompt: 'Test',
+        })
+      ).rejects.toThrow('API key is required')
     })
 
     it('should handle API errors gracefully', async () => {
       const errorMessage = 'API rate limit exceeded'
-      ;(generateText as jest.Mock).mockRejectedValue(new Error(errorMessage))
+      mockCreate.mockRejectedValue(new Error(errorMessage))
 
       await expect(
         callLLM({
           model: 'gpt-5',
           prompt: 'Test',
+          apiKey: 'test-key',
         })
       ).rejects.toThrow(errorMessage)
     })

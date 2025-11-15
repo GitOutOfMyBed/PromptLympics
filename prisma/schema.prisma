@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  name          String?
-  email         String        @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  accounts      Account[]
-  competitions  Competition[]
-  sessions      Session[]
-  submissions   Submission[]
+  id                   String              @id @default(cuid())
+  name                 String?
+  email                String              @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  accounts             Account[]
+  competitions         Competition[]
+  sessions             Session[]
+  submissions          Submission[]
+  practiceChallenges   PracticeChallenge[]
+  practiceSubmissions  PracticeSubmission[]
 }
 
 model Account {
@@ -89,7 +91,9 @@ model Competition {
 
   // API Key configuration (encrypted)
   encryptedApiKey    String
-  apiKeyProvider     String            // "openai", "anthropic", or "google"
+  apiKeyProvider     String            // "openai", "anthropic", "google", or "custom"
+  customBaseUrl      String?           // Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter)
+  customHeaders      String?           // JSON string of custom headers
 
   organizer          User              @relation(fields: [organizerId], references: [id])
   submissions        Submission[]
@@ -131,4 +135,54 @@ enum SubmissionStatus {
   EVALUATING
   COMPLETED
   FAILED
+}
+
+model PracticeChallenge {
+  id                    String               @id @default(cuid())
+  title                 String
+  description           String
+  organizationName      String
+  minimumScore          Float?
+  targetScore           Float?
+  maxSubmissionsPerUser Int                  @default(999) // High limit for practice - essentially unlimited
+  starterPrompt         String?
+  characterLimit        Int?
+  tokenLimit            Int?
+  trainingDataUrl       String               // Public download URL for training data
+  validationDataUrl     String               // Private storage path (not a URL - accessed via Admin SDK)
+  trainingDataSize      Int
+  validationDataSize    Int
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  bestScore             Float?
+  bestSubmissionId      String?
+  creatorId             String
+  modelType             String
+
+  // API Key configuration (encrypted)
+  encryptedApiKey       String
+  apiKeyProvider        String               // "openai", "anthropic", "google", or "custom"
+  customBaseUrl         String?              // Custom base URL for OpenAI-compatible APIs (e.g., OpenRouter)
+  customHeaders         String?              // JSON string of custom headers
+
+  creator               User                 @relation(fields: [creatorId], references: [id])
+  submissions           PracticeSubmission[]
+}
+
+model PracticeSubmission {
+  id                  String           @id @default(cuid())
+  practiceChallengeId String
+  userId              String
+  prompt              String
+  score               Float?           // Accuracy score (indexed for leaderboard performance)
+  evaluationLog       String?          // JSON array of test case results (user can see their own)
+  status              SubmissionStatus @default(PENDING)
+  errorMessage        String?
+  submittedAt         DateTime         @default(now())
+  evaluatedAt         DateTime?
+  practiceChallenge   PracticeChallenge @relation(fields: [practiceChallengeId], references: [id], onDelete: Cascade)
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([practiceChallengeId, score])
+  @@index([userId])
 }

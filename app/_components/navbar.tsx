@@ -30,6 +30,9 @@ export function Navbar() {
               <Link href="/competitions">
                 <Button variant="ghost" className="font-medium">Competitions</Button>
               </Link>
+              <Link href="/practice">
+                <Button variant="ghost" className="font-medium">Practice</Button>
+              </Link>
               <Link href="/profile">
                 <Button variant="ghost" className="font-medium">Profile</Button>
               </Link>
