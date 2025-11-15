@@ -77,24 +77,11 @@ export const SUPPORTED_MODELS = {
 export type SupportedModel = keyof typeof SUPPORTED_MODELS;
 
 /**
- * Get the appropriate API key environment variable for a provider
- */
-function getProviderApiKey(provider: string): string | undefined {
-  switch (provider) {
-    case "openai":
-      return process.env.OPENAI_API_KEY;
-    case "anthropic":
-      return process.env.ANTHROPIC_API_KEY;
-    case "google":
-      return process.env.GOOGLE_API_KEY;
-    default:
-      return undefined;
-  }
-}
-
-/**
  * Call an LLM using the OpenAI SDK
  * Works with OpenAI, Anthropic, Google, OpenRouter, and any OpenAI-compatible API
+ *
+ * IMPORTANT: apiKey is required. In production, this is always the user's encrypted key
+ * that has been decrypted during evaluation.
  */
 export async function callLLM(options: LLMCallOptions): Promise<string> {
   const {
@@ -106,34 +93,28 @@ export async function callLLM(options: LLMCallOptions): Promise<string> {
     headers,
   } = options;
 
+  if (!apiKey) {
+    throw new Error("API key is required for LLM calls");
+  }
+
   try {
-    // Determine base URL and API key
+    // Determine base URL
     let finalBaseURL = baseURL;
-    let finalApiKey = apiKey;
 
     // If no custom baseURL provided, check if it's a supported model
     if (!finalBaseURL) {
       const modelConfig = SUPPORTED_MODELS[model as SupportedModel];
       if (modelConfig) {
         finalBaseURL = modelConfig.baseURL;
-        // Use provider-specific API key if no custom key provided
-        if (!finalApiKey) {
-          finalApiKey = getProviderApiKey(modelConfig.provider);
-        }
+      } else {
+        // Unknown model, assume OpenAI endpoint
+        finalBaseURL = "https://api.openai.com/v1";
       }
-    }
-
-    // Fallback to OpenAI if no configuration found
-    if (!finalBaseURL) {
-      finalBaseURL = "https://api.openai.com/v1";
-    }
-    if (!finalApiKey) {
-      finalApiKey = process.env.OPENAI_API_KEY;
     }
 
     // Create OpenAI client with configuration
     const client = new OpenAI({
-      apiKey: finalApiKey,
+      apiKey,
       baseURL: finalBaseURL,
       defaultHeaders: headers,
     });
