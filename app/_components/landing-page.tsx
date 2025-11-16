@@ -10,6 +10,7 @@ import {
 import { Trophy, Users, Zap, Target, Sparkles, ArrowRight } from "lucide-react";
 import { Navbar } from "@/app/_components/navbar";
 
+/** Landing page with hero, features, and CTA sections */
 export function LandingPage() {
   return (
     <div className="min-h-screen">

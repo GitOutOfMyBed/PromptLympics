@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/app/_components/ui/button";
 import { Mail } from "lucide-react";
 
+/** Footer with copyright and contact link */
 export function Footer() {
   return (
     <footer className="border-t mt-auto">
