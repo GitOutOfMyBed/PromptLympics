@@ -69,6 +69,7 @@ const INITIAL_FORM_DATA: CompetitionFormData = {
   apiKey: "",
 };
 
+/** Multi-step form for creating competitions - auto-saves to localStorage */
 export function CompetitionCreateForm({ userId }: { userId: string }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -248,7 +249,7 @@ export function CompetitionCreateForm({ userId }: { userId: string }) {
       // Get Firebase ID token
       const token = await user.getIdToken();
 
-      // Upload files to Firebase Storage
+      // Upload training (public) and validation (private) files to Firebase Storage
       const timestamp = Date.now();
       const trainingRef = ref(
         storage,

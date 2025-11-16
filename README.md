@@ -143,6 +143,22 @@ npx prisma migrate deploy
 └── prisma/schema.prisma     # Database schema
 ```
 
+## API Reference
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/competitions` | GET | No | List all competitions |
+| `/api/competitions` | POST | Yes | Create competition |
+| `/api/competitions/[id]` | GET | No | Get competition details |
+| `/api/competitions/[id]` | PUT | Yes | Update competition |
+| `/api/competitions/[id]` | DELETE | Yes | Delete competition |
+| `/api/competitions/[id]/submit` | POST | Yes | Submit prompt |
+| `/api/competitions/[id]/leaderboard` | GET | No | Get leaderboard |
+| `/api/submissions/[id]` | GET | Yes | Get submission status |
+| `/api/practice` | POST | Yes | Submit practice challenge |
+
+Auth header: `Authorization: Bearer <firebase-token>`
+
 ## Key Features Explained
 
 ### Competition Creation

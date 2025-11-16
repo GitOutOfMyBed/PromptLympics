@@ -3,6 +3,7 @@ import "server-only"
 import { verifyIdToken } from "@/firebase/firebaseadmin"
 import { prisma } from "@/lib/prisma"
 
+/** Verify Firebase auth token and get/create user in DB */
 export async function verifyAuth(request: Request) {
   const authHeader = request.headers.get("Authorization")
 

@@ -7,6 +7,7 @@ import { useAuth } from "@/app/_components/providers/auth-provider"
 import { Button } from "@/app/_components/ui/button"
 import { Trophy, Plus } from "lucide-react"
 
+/** Main navigation bar - shows different options for logged in/out users */
 export function Navbar() {
   const { user } = useAuth()
 
