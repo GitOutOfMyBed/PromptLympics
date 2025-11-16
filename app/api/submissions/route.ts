@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { evaluatePrompt } from "@/lib/evaluation";
 import { updateExpiredCompetitions } from "@/lib/db-utils";
 
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/submissions
  * Creates a new prompt submission for a competition and triggers evaluation.

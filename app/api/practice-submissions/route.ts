@@ -3,6 +3,8 @@ import { verifyAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { evaluatePracticePrompt } from "@/lib/practice-evaluation";
 
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/practice-submissions
  * Creates a new prompt submission for a practice challenge and triggers evaluation.

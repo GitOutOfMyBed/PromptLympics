@@ -5,6 +5,8 @@ import { CompetitionStatus } from "@prisma/client";
 import { encryptApiKey, getProviderFromModel } from "@/lib/encryption";
 import { updateExpiredCompetitions } from "@/lib/db-utils";
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/competitions
  * Returns all competitions with submission counts and organizer info.

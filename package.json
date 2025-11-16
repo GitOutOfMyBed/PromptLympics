@@ -9,7 +9,10 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:schema": "jest __tests__/database-schema.test.ts",
+    "test:routes": "jest __tests__/api-routes.test.ts",
+    "prebuild": "npm run test:routes && npm run test:schema"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -49,6 +52,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
+    "glob": "^11.0.3",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.4.41",

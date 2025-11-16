@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { verifyAuth } from "@/lib/auth"
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: Request) {
   try {
     const auth = await verifyAuth(req)
