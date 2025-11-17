@@ -1,21 +1,22 @@
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { AuthProvider } from "@/app/_components/providers/auth-provider"
-import { Footer } from "@/app/_components/footer"
-import { AnimatedBackground } from "@/app/_components/animated-background"
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/app/_components/providers/auth-provider";
+import { Footer } from "@/app/_components/footer";
+import { AnimatedBackground } from "@/app/_components/animated-background";
+import { Analytics } from "@vercel/analytics/next";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "PromptLympics - Prompt Engineering Competitions",
   description: "A platform for crowdsourced prompt engineering competitions",
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
@@ -25,7 +26,8 @@ export default function RootLayout({
           <div className="flex-1">{children}</div>
           <Footer />
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
-  )
+  );
 }
